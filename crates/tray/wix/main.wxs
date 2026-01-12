@@ -84,5 +84,14 @@
 
         <Icon Id="TrayIcon.exe" SourceFile="..\..\target\release\kmitlnetauth-tray.exe" />
 
+        <!-- Launch App on Exit Logic -->
+        <Property Id="WIXUI_EXITDIALOGOPTIONALCHECKBOXTEXT" Value="Launch KMITL NetAuth Tray" />
+        <Property Id="WixShellExecTarget" Value="[#TrayExe]" />
+        <CustomAction Id="LaunchApplication" BinaryKey="WixCA" DllEntry="WixShellExec" Impersonate="yes" />
+        
+        <UI>
+            <UIRef Id="WixUI_Minimal" />
+            <Publish Dialog="ExitDialog" Control="Finish" Event="DoAction" Value="LaunchApplication">WIXUI_EXITDIALOGOPTIONALCHECKBOX = 1 and NOT Installed</Publish>
+        </UI>
     </Product>
 </Wix>

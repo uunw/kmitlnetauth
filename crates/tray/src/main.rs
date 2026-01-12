@@ -1,5 +1,4 @@
-use eframe::egui;
-use kmitlnetauth_core::{Config, CredentialManager};
+use kmitlnetauth_core::Config;
 use std::path::PathBuf;
 use tray_icon::{
     menu::{Menu, MenuItem, MenuEvent, PredefinedMenuItem, CheckMenuItem},
@@ -7,7 +6,8 @@ use tray_icon::{
 };
 use directories::ProjectDirs;
 use tracing::{info, error};
-use crossbeam_channel::Receiver;
+use tao::event_loop::{EventLoop, ControlFlow};
+use tao::event::{Event, TrayIconEvent};
 use auto_launch::AutoLaunchBuilder;
 use std::env;
 
@@ -16,37 +16,34 @@ struct TrayApp {
     config_path: PathBuf,
     // Keep reference to tray_icon so it isn't dropped
     #[allow(dead_code)]
-    tray_icon: Option<TrayIcon>,
-    show_window: bool,
-    menu_channel: Receiver<MenuEvent>,
+    tray_icon: TrayIcon,
     // Menu Items
     item_quit: MenuItem,
     item_settings: MenuItem,
-    item_open_config: MenuItem,
     item_auto_start: CheckMenuItem,
     item_auto_login: CheckMenuItem,
 }
 
 impl TrayApp {
-    fn new(_cc: &eframe::CreationContext) -> Self {
+    fn new() -> Self {
         // Setup Tray Menu
         let tray_menu = Menu::new();
         
-        let item_settings = MenuItem::new("Settings (UI)", true, None);
-        let item_open_config = MenuItem::new("Open Config File", true, None);
+        let item_settings = MenuItem::new("Settings (Config File)", true, None);
         let item_auto_login = CheckMenuItem::new("Auto Login", true, true, None);
-        let item_auto_start = CheckMenuItem::new("Auto Start", true, false, None); // Default false, will check later
+        let item_auto_start = CheckMenuItem::new("Auto Start", true, false, None); 
         let item_quit = MenuItem::new("Quit", true, None);
         
         tray_menu.append(&item_auto_login).unwrap();
         tray_menu.append(&item_auto_start).unwrap();
         tray_menu.append(&PredefinedMenuItem::separator()).unwrap();
         tray_menu.append(&item_settings).unwrap();
-        tray_menu.append(&item_open_config).unwrap();
         tray_menu.append(&PredefinedMenuItem::separator()).unwrap();
         tray_menu.append(&item_quit).unwrap();
 
-        // Load icon (placeholder)
+        // Load icon
+        // For production, we should load a real icon file or resource.
+        // Creating a simple colored icon for now.
         let icon_rgba = vec![255, 0, 0, 255]; // Red pixel
         let icon = tray_icon::Icon::from_rgba(icon_rgba, 1, 1).unwrap();
 
@@ -56,8 +53,6 @@ impl TrayApp {
             .with_icon(icon)
             .build()
             .unwrap();
-
-        let menu_channel = MenuEvent::receiver();
 
         // Config path
         let config_path = if cfg!(target_os = "linux") {
@@ -81,7 +76,7 @@ impl TrayApp {
         let auto = AutoLaunchBuilder::new()
             .set_app_name("KMITL NetAuth")
             .set_app_path(env::current_exe().unwrap_or_default().to_str().unwrap())
-            .set_use_launch_agent(true) // For mac, though we skip it, standard practice
+            .set_use_launch_agent(true) 
             .build()
             .unwrap();
         
@@ -92,12 +87,9 @@ impl TrayApp {
         Self {
             config,
             config_path,
-            tray_icon: Some(tray_icon),
-            show_window: false, // Start hidden
-            menu_channel: menu_channel.clone(),
+            tray_icon,
             item_quit,
             item_settings,
-            item_open_config,
             item_auto_start,
             item_auto_login,
         }
@@ -122,100 +114,58 @@ impl TrayApp {
             }
         }
     }
-}
 
-impl eframe::App for TrayApp {
-    fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
-        // Handle Tray Events
-        while let Ok(event) = self.menu_channel.try_recv() {
-             // Check against our items
-             if event.id == self.item_quit.id() {
-                 std::process::exit(0);
-             } else if event.id == self.item_settings.id() {
-                 self.show_window = true;
-             } else if event.id == self.item_open_config.id() {
-                 if !self.config_path.exists() {
-                     // Create empty if not exists so it can be opened
-                     if let Err(e) = self.config.save(&self.config_path) {
-                         error!("Failed to create config file: {}", e);
-                     }
-                 }
-                 if let Err(e) = open::that(&self.config_path) {
-                     error!("Failed to open config file: {}", e);
-                 }
-             } else if event.id == self.item_auto_login.id() {
-                 self.config.auto_login = self.item_auto_login.is_checked();
-                 let _ = self.config.save(&self.config_path);
-             } else if event.id == self.item_auto_start.id() {
-                 self.toggle_auto_start(self.item_auto_start.is_checked());
+    fn open_config(&mut self) {
+         if !self.config_path.exists() {
+             // Create empty if not exists so it can be opened
+             if let Err(e) = self.config.save(&self.config_path) {
+                 error!("Failed to create config file: {}", e);
              }
-        }
+         }
+         if let Err(e) = open::that(&self.config_path) {
+             error!("Failed to open config file: {}", e);
+         }
+    }
 
-        if self.show_window {
-            egui::Window::new("KMITL NetAuth Settings")
-                .open(&mut self.show_window)
-                .show(ctx, |ui| {
-                    ui.heading("Configuration");
-                    
-                    ui.horizontal(|ui| {
-                        ui.label("Username:");
-                        ui.text_edit_singleline(&mut self.config.username);
-                    });
-
-                    ui.horizontal(|ui| {
-                        ui.label("Password:");
-                        // Helper to handle password.
-                        // We show placeholders if stored in keyring?
-                        // Or just empty and let user type to overwrite.
-                        let mut password = self.config.password.clone().unwrap_or_default();
-                        if password.is_empty() && !self.config.username.is_empty() {
-                            // Try fetch from keyring to display?
-                            // Security risk? Maybe just "***" if exists.
-                            if let Ok(_) = CredentialManager::get_password(&self.config.username) {
-                                // Indicate password exists but don't show it?
-                                // ui.label("(Stored in Keyring)");
-                                // But user might want to change it.
-                            }
-                        }
-                        
-                        if ui.add(egui::TextEdit::singleline(&mut password).password(true)).changed() {
-                            self.config.password = Some(password);
-                        }
-                    });
-
-                    ui.horizontal(|ui| {
-                        ui.label("Interval (sec):");
-                        ui.add(egui::DragValue::new(&mut self.config.interval));
-                    });
-                    
-                    ui.checkbox(&mut self.config.auto_login, "Auto Login");
-
-                    if ui.button("Save").clicked() {
-                        if let Err(e) = self.config.save(&self.config_path) {
-                            error!("Failed to save config: {}", e);
-                        } else {
-                            info!("Config saved to {:?}", self.config_path);
-                            // Update tray check state
-                            self.item_auto_login.set_checked(self.config.auto_login);
-                        }
-                    }
-                });
-        }
+    fn update_config(&mut self) {
+        self.config.auto_login = self.item_auto_login.is_checked();
+        let _ = self.config.save(&self.config_path);
     }
 }
 
-fn main() -> eframe::Result<()> {
+fn main() {
     // Log
     tracing_subscriber::fmt::init();
 
-    let options = eframe::NativeOptions {
-        viewport: egui::ViewportBuilder::default().with_inner_size([320.0, 240.0]),
-        ..Default::default()
-    };
+    let event_loop = EventLoop::new();
+    let mut app = TrayApp::new();
     
-    eframe::run_native(
-        "KMITL NetAuth",
-        options,
-        Box::new(|cc| Ok(Box::new(TrayApp::new(cc)))),
-    )
+    // Auto-open config if username is missing (First run)
+    if app.config.username.is_empty() {
+        app.open_config();
+    }
+
+    let menu_channel = MenuEvent::receiver();
+    let tray_channel = TrayIconEvent::receiver();
+
+    event_loop.run(move |_event, _, control_flow| {
+        *control_flow = ControlFlow::Wait;
+
+        if let Ok(event) = menu_channel.try_recv() {
+            if event.id == app.item_quit.id() {
+                *control_flow = ControlFlow::Exit;
+            } else if event.id == app.item_settings.id() {
+                app.open_config();
+            } else if event.id == app.item_auto_login.id() {
+                app.update_config();
+            } else if event.id == app.item_auto_start.id() {
+                app.toggle_auto_start(app.item_auto_start.is_checked());
+            }
+        }
+        
+        if let Ok(event) = tray_channel.try_recv() {
+             // Handle tray click events if needed (e.g. left click to toggle something)
+             println!("Tray event: {:?}", event);
+        }
+    });
 }
