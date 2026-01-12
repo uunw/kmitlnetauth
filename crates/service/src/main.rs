@@ -1,7 +1,7 @@
 use clap::Parser;
 use kmitlnetauth_core::{AuthClient, Config};
 use std::path::PathBuf;
-use tracing::{info, error, warn};
+use tracing::{info, error};
 use directories::ProjectDirs;
 use tracing_appender::rolling::{RollingFileAppender, Rotation};
 use std::io::{Write, IsTerminal};

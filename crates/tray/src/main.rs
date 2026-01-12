@@ -2,12 +2,11 @@ use kmitlnetauth_core::Config;
 use std::path::PathBuf;
 use tray_icon::{
     menu::{Menu, MenuItem, MenuEvent, PredefinedMenuItem, CheckMenuItem},
-    TrayIconBuilder, TrayIcon,
+    TrayIconBuilder, TrayIcon, TrayIconEvent,
 };
 use directories::ProjectDirs;
-use tracing::{info, error};
+use tracing::error;
 use tao::event_loop::{EventLoop, ControlFlow};
-use tao::event::{Event, TrayIconEvent};
 use auto_launch::AutoLaunchBuilder;
 use std::env;
 
