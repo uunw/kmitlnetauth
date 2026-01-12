@@ -1,9 +1,13 @@
-# Ignore everything by default
+# Ignore everything
 *
 
-# Allow these directories and files
+# Allow root manifests
 !Cargo.toml
 !Cargo.lock
-!crates/
-!.github/
 !Dockerfile
+
+# Allow source code recursively
+!crates/**
+
+# Allow Github Actions config if needed
+!.github/**
