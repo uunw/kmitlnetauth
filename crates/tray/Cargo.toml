@@ -20,5 +20,6 @@ open = { workspace = true }
 
 [target.'cfg(target_os = "linux")'.dependencies]
 gtk = "0.18" 
-# eframe on linux needs gtk usually or wayland libs. 
-# But eframe dependency usually handles it.
+
+[target.'cfg(target_os = "windows")'.dependencies]
+windows = { version = "0.58", features = ["Win32_System_Console", "Win32_Foundation", "Win32_UI_WindowsAndMessaging"] }

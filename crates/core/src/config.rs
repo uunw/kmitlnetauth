@@ -18,6 +18,12 @@ pub struct Config {
     pub interval: u64,
     pub max_attempt: u32,
     pub auto_login: bool,
+    #[serde(default = "default_log_level")]
+    pub log_level: String,
+}
+
+fn default_log_level() -> String {
+    "info".to_string()
 }
 
 impl Default for Config {
@@ -29,6 +35,7 @@ impl Default for Config {
             interval: 300,
             max_attempt: 20,
             auto_login: true,
+            log_level: default_log_level(),
         }
     }
 }
@@ -67,6 +74,9 @@ impl Config {
             if let Ok(parsed) = val.parse() {
                 config.auto_login = parsed;
             }
+        }
+        if let Ok(val) = env::var("KMITL_LOG_LEVEL") {
+            config.log_level = val;
         }
 
         // Migration: If password exists in config (from file or env), try to move it to Keyring

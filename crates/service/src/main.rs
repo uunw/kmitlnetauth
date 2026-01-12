@@ -1,11 +1,12 @@
 use clap::Parser;
 use kmitlnetauth_core::{AuthClient, Config};
 use std::path::PathBuf;
-use tracing::{info, error};
+use tracing::{info, error, Level};
 use directories::ProjectDirs;
 use tracing_appender::rolling::{RollingFileAppender, Rotation};
 use std::io::{Write, IsTerminal};
 use dialoguer::{Input, Password, Confirm};
+use std::str::FromStr;
 
 struct CombinedWriter<W1: Write, W2: Write> {
     w1: W1,
@@ -36,27 +37,6 @@ struct Args {
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
-    // Setup logging with rotation
-    let log_dir = if let Some(proj_dirs) = ProjectDirs::from("com", "kmitl", "netauth") {
-        proj_dirs.data_local_dir().join("logs")
-    } else {
-        PathBuf::from("logs")
-    };
-
-    let file_appender = RollingFileAppender::new(Rotation::DAILY, &log_dir, "service.log");
-    
-    let multi_writer = CombinedWriter {
-        w1: std::io::stdout(),
-        w2: file_appender,
-    };
-    
-    let (non_blocking, _guard) = tracing_appender::non_blocking(multi_writer);
-
-    tracing_subscriber::fmt()
-        .with_writer(non_blocking)
-        .with_ansi(false) 
-        .init();
-
     let args = Args::parse();
 
     // Determine config path
@@ -82,8 +62,35 @@ async fn main() -> anyhow::Result<()> {
         }
     };
 
+    // Peek config for log level (ignore errors, they will be caught later)
+    let log_level_str = Config::load(&config_path).map(|c| c.log_level).unwrap_or_else(|_| "info".to_string());
+    let log_level = Level::from_str(&log_level_str).unwrap_or(Level::INFO);
+
+    // Setup logging with rotation
+    let log_dir = if let Some(proj_dirs) = ProjectDirs::from("com", "kmitl", "netauth") {
+        proj_dirs.data_local_dir().join("logs")
+    } else {
+        PathBuf::from("logs")
+    };
+
+    let file_appender = RollingFileAppender::new(Rotation::DAILY, &log_dir, "service.log");
+    
+    let multi_writer = CombinedWriter {
+        w1: std::io::stdout(),
+        w2: file_appender,
+    };
+    
+    let (non_blocking, _guard) = tracing_appender::non_blocking(multi_writer);
+
+    tracing_subscriber::fmt()
+        .with_writer(non_blocking)
+        .with_ansi(false)
+        .with_max_level(log_level)
+        .init();
+
     info!("Starting KMITL NetAuth Service");
     info!("Using config file: {:?}", config_path);
+    info!("Log Level: {}", log_level);
 
     let mut config = match Config::load(&config_path) {
         Ok(cfg) => cfg,
