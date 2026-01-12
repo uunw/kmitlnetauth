@@ -1,0 +1,88 @@
+<?xml version='1.0' encoding='windows-1252'?>
+<!--
+  Copyright (C) 2017 Christopher R. Field.
+
+  Licensed under the Apache License, Version 2.0 (the "License");
+  you may not use this file except in compliance with the License.
+  You may obtain a copy of the License at
+
+  http://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+-->
+
+<!--
+  The "Product" element is the top-level element for the WiX source file.
+  The "Id" attribute is the Product Code. "test" means a new GUID will be generated on every build (good for dev).
+  The "UpgradeCode" is a GUID that identifies the product family (stays same across versions).
+-->
+<Wix xmlns='http://schemas.microsoft.com/wix/2006/wi'>
+    <Product Id='*' Name='KMITL NetAuth' UpgradeCode='6D611230-2216-4318-8743-730107865261' Manufacturer='KMITL Developer' Language='1033' Codepage='1252' Version='0.1.0'>
+        <Package Id='*' Keywords='Installer' Description='KMITL NetAuth Installer' Manufacturer='KMITL Developer' InstallerVersion='450' Languages='1033' Compressed='yes' InstallScope='perMachine' SummaryCodepage='1252' Platform='x64'/>
+
+        <MajorUpgrade Schedule='afterInstallInitialize' DowngradeErrorMessage='A newer version of [ProductName] is already installed. Setup will now exit.'/>
+
+        <Media Id='1' Cabinet='media1.cab' EmbedCab='yes' DiskPrompt='CD-ROM #1'/>
+        <Property Id='DiskPrompt' Value='KMITL NetAuth Installation [1]'/>
+
+        <Directory Id='TARGETDIR' Name='SourceDir'>
+            <Directory Id='ProgramFiles64Folder' Name='PFiles'>
+                <Directory Id='APPLICATIONFOLDER' Name='KMITL NetAuth'>
+                    
+                    <!-- Service Binary -->
+                    <Component Id='BinaryService' Guid='C9503926-2670-4E84-8859-992224151240' Win64='yes'>
+                        <File Id='ServiceExe' Name='kmitlnetauth.exe' DiskId='1' Source='..\..\target\release\kmitlnetauth.exe' KeyPath='yes'/>
+                        <!-- Optional: Register as Windows Service (If needed, uncomment below) -->
+                        <!-- 
+                        <ServiceInstall Id='ServiceInstaller' Type='ownProcess' Vital='yes' Name='KMITLNetAuth' DisplayName='KMITL NetAuth Service' Description='Auto-authenticates KMITL Internet' Start='auto' Account='LocalSystem' ErrorControl='ignore' Interactive='no' />
+                        <ServiceControl Id='StartService' Start='install' Stop='both' Remove='uninstall' Name='KMITLNetAuth' Wait='yes' />
+                        -->
+                        <!-- Since user asked for "Background Service" usually implies User Session background, not System Service which is harder to interact with UI -->
+                        <!-- We will set it to run on startup instead -->
+                    </Component>
+
+                    <!-- Tray Binary -->
+                    <Component Id='BinaryTray' Guid='AB453210-5678-4321-8765-1234567890AB' Win64='yes'>
+                        <File Id='TrayExe' Name='kmitlnetauth-tray.exe' DiskId='1' Source='..\..\target\release\kmitlnetauth-tray.exe' KeyPath='yes'>
+                            <Shortcut Id="startmenuTray" Directory="ProgramMenuDir" Name="KMITL NetAuth" WorkingDirectory='APPLICATIONFOLDER' Icon="TrayIcon.exe" IconIndex="0" Advertise="yes" />
+                            <Shortcut Id="desktopTray" Directory="DesktopFolder" Name="KMITL NetAuth" WorkingDirectory='APPLICATIONFOLDER' Icon="TrayIcon.exe" IconIndex="0" Advertise="yes" />
+                        </File>
+                    </Component>
+                    
+                    <Component Id='ConfigDir' Guid='12345678-1234-1234-1234-123456789012' Win64='yes'>
+                         <CreateFolder />
+                         <RemoveFolder Id='RemoveAppRoot' On='uninstall' />
+                    </Component>
+
+                </Directory>
+            </Directory>
+
+            <!-- Shortcuts -->
+            <Directory Id="ProgramMenuFolder" Name="Programs">
+                <Directory Id="ProgramMenuDir" Name="KMITL NetAuth">
+                    <Component Id="ProgramMenuDir" Guid="D8901234-1234-1234-1234-123456789012">
+                        <RemoveFolder Id='ProgramMenuDir' On='uninstall' />
+                        <RegistryValue Root='HKCU' Key='Software\[Manufacturer]\[ProductName]' Type='string' Value='' KeyPath='yes' />
+                        <Shortcut Id="UninstallProduct" Name="Uninstall KMITL NetAuth" Description="Uninstalls KMITL NetAuth" Target="[System64Folder]msiexec.exe" Arguments="/x [ProductCode]"/>
+                    </Component>
+                </Directory>
+            </Directory>
+
+            <Directory Id="DesktopFolder" Name="Desktop" />
+        </Directory>
+
+        <Feature Id='Complete' Level='1'>
+            <ComponentRef Id='BinaryService' />
+            <ComponentRef Id='BinaryTray' />
+            <ComponentRef Id='ConfigDir' />
+            <ComponentRef Id='ProgramMenuDir' />
+        </Feature>
+
+        <Icon Id="TrayIcon.exe" SourceFile="..\..\target\release\kmitlnetauth-tray.exe" />
+
+    </Product>
+</Wix>

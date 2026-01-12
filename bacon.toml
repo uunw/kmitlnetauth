@@ -1,0 +1,38 @@
+# This is a configuration file for the bacon tool
+#
+# Bacon repository: https://github.com/Canop/bacon
+# Complete help on configuration: https://dystroy.org/bacon/config/
+#
+# You can also run `bacon --init` to generate a default configuration file.
+
+default_job = "check"
+
+[jobs.check]
+command = ["cargo", "check", "--color", "always"]
+need_stdout = false
+
+[jobs.clippy]
+command = ["cargo", "clippy", "--color", "always", "--", "-D", "warnings"]
+need_stdout = false
+
+[jobs.test]
+command = ["cargo", "test", "--color", "always"]
+need_stdout = true
+
+[jobs.run-service]
+command = ["cargo", "run", "--color", "always", "--bin", "kmitlnetauth"]
+need_stdout = true
+allow_warnings = true
+
+[jobs.run-tray]
+command = ["cargo", "run", "--color", "always", "--bin", "kmitlnetauth-tray"]
+need_stdout = true
+allow_warnings = true
+
+[jobs.doc]
+command = ["cargo", "doc", "--color", "always", "--no-deps"]
+need_stdout = false
+
+# If you want to check specific targets (e.g. windows cross-check on linux)
+# [jobs.check-win]
+# command = ["cargo", "check", "--target", "x86_64-pc-windows-gnu", "--color", "always"]

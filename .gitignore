@@ -1,0 +1,28 @@
+# Rust
+/target
+Cargo.lock
+
+# Logs
+logs/
+*.log
+
+# Local configuration (contains credentials)
+config.yaml
+config.json
+.env
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Packaging artifacts
+*.deb
+*.rpm
+*.msi
+*.exe

@@ -1,0 +1,14 @@
+[Unit]
+Description=KMITL NetAuth Service
+After=network.target
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/kmitlnetauth
+Restart=always
+RestartSec=10
+# User=kmitlnetauth # If running as specific user
+# Environment=RUST_LOG=info
+
+[Install]
+WantedBy=multi-user.target
