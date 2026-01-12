@@ -5,8 +5,9 @@ use tracing::{info, error, Level};
 use directories::ProjectDirs;
 use tracing_appender::rolling::{RollingFileAppender, Rotation};
 use std::io::{Write, IsTerminal};
-use dialoguer::{Input, Password, Confirm};
 use std::str::FromStr;
+
+mod tui;
 
 struct CombinedWriter<W1: Write, W2: Write> {
     w1: W1,
@@ -33,6 +34,10 @@ struct Args {
     /// Path to config file
     #[arg(short, long)]
     config: Option<PathBuf>,
+
+    /// Run as daemon (no TUI)
+    #[arg(short, long)]
+    daemon: bool,
 }
 
 #[tokio::main]
@@ -62,35 +67,42 @@ async fn main() -> anyhow::Result<()> {
         }
     };
 
-    // Peek config for log level (ignore errors, they will be caught later)
+    // Peek config for log level
     let log_level_str = Config::load(&config_path).map(|c| c.log_level).unwrap_or_else(|_| "info".to_string());
     let log_level = Level::from_str(&log_level_str).unwrap_or(Level::INFO);
 
-    // Setup logging with rotation
-    let log_dir = if let Some(proj_dirs) = ProjectDirs::from("com", "kmitl", "netauth") {
-        proj_dirs.data_local_dir().join("logs")
+    // Check mode
+    let is_interactive = std::io::stdout().is_terminal();
+    let run_as_daemon = args.daemon || !is_interactive;
+
+    if run_as_daemon {
+        // Setup Daemon Logging (File + Stdout)
+        let log_dir = if let Some(proj_dirs) = ProjectDirs::from("com", "kmitl", "netauth") {
+            proj_dirs.data_local_dir().join("logs")
+        } else {
+            PathBuf::from("logs")
+        };
+
+        let file_appender = RollingFileAppender::new(Rotation::DAILY, &log_dir, "service.log");
+        let multi_writer = CombinedWriter {
+            w1: std::io::stdout(),
+            w2: file_appender,
+        };
+        let (non_blocking, _guard) = tracing_appender::non_blocking(multi_writer);
+
+        tracing_subscriber::fmt()
+            .with_writer(non_blocking)
+            .with_ansi(false)
+            .with_max_level(log_level)
+            .init();
+
+        info!("Starting KMITL NetAuth Service (Daemon)");
+        info!("Using config file: {:?}", config_path);
     } else {
-        PathBuf::from("logs")
-    };
-
-    let file_appender = RollingFileAppender::new(Rotation::DAILY, &log_dir, "service.log");
-    
-    let multi_writer = CombinedWriter {
-        w1: std::io::stdout(),
-        w2: file_appender,
-    };
-    
-    let (non_blocking, _guard) = tracing_appender::non_blocking(multi_writer);
-
-    tracing_subscriber::fmt()
-        .with_writer(non_blocking)
-        .with_ansi(false)
-        .with_max_level(log_level)
-        .init();
-
-    info!("Starting KMITL NetAuth Service");
-    info!("Using config file: {:?}", config_path);
-    info!("Log Level: {}", log_level);
+        // Setup TUI Logging
+        tui_logger::init_logger(log::LevelFilter::from_str(&log_level_str).unwrap_or(log::LevelFilter::Info))?;
+        tui_logger::set_default_level(log::LevelFilter::from_str(&log_level_str).unwrap_or(log::LevelFilter::Info));
+    }
 
     let mut config = match Config::load(&config_path) {
         Ok(cfg) => cfg,
@@ -100,50 +112,35 @@ async fn main() -> anyhow::Result<()> {
         }
     };
     
-    // Check if username is set
-    if config.username.is_empty() {
-        if std::io::stdin().is_terminal() {
-            println!("Configuration missing or incomplete.");
-            println!("Running interactive setup...");
-            
-            let username: String = Input::new()
-                .with_prompt("KMITL Username (Student ID)")
-                .interact_text()
-                .unwrap();
-                
-            let password = Password::new()
-                .with_prompt("Password")
-                .interact()
-                .unwrap();
-
-            let ip_address: String = Input::new()
-                .with_prompt("Your IP Address")
-                .interact_text()
-                .unwrap();
-                
-            let auto_login = Confirm::new()
-                .with_prompt("Enable Auto Login?")
-                .default(true)
-                .interact()
-                .unwrap();
-
-            config.username = username;
-            config.password = Some(password);
-            config.ip_address = Some(ip_address);
-            config.auto_login = auto_login;
-
-            match config.save(&config_path) {
-                Ok(_) => info!("Configuration saved to {:?}", config_path),
-                Err(e) => error!("Failed to save configuration: {}", e),
-            }
-        } else {
-            error!("Username not set in config and not running interactively. Please configure it via file or environment variables.");
-            return Ok(());
-        }
+    // Interactive Setup (Only if TUI/Interactive mode and missing creds)
+    // Actually, TUI can handle login input. 
+    // But if we want the CLI wizard, we should run it before TUI init?
+    // User requested "login command in TUI". So we can skip CLI wizard if TUI is active.
+    // BUT legacy wizard is useful.
+    // Let's keep wizard ONLY if NOT daemon AND config missing AND user hasn't started TUI yet?
+    // Actually, if we launch TUI, we can show a popup "Please Login".
+    // So let's skip the CLI wizard if we are going into TUI mode, rely on TUI.
+    
+    if run_as_daemon && config.username.is_empty() {
+         error!("Username not set in config. Please configure it.");
+         return Ok(());
     }
 
-    let client = AuthClient::new(config)?;
-    client.run_loop().await;
+    // Run
+    let client = AuthClient::new(config.clone())?;
+
+    if run_as_daemon {
+        client.run_loop().await;
+    } else {
+        // TUI Mode
+        // Spawn client in background
+        tokio::spawn(async move {
+            client.run_loop().await;
+        });
+        
+        // Run TUI
+        tui::run(config).await?;
+    }
 
     Ok(())
 }
