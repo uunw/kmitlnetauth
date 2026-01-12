@@ -2,6 +2,8 @@
 name = "kmitlnetauth-service"
 version = "0.1.0"
 edition = "2024"
+description = "Auto-authentication service for KMITL network"
+license = "MIT"
 
 [[bin]]
 name = "kmitlnetauth"
