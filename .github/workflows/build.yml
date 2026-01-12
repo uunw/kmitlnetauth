@@ -20,6 +20,8 @@ jobs:
       run: |
         sudo apt-get update
         sudo apt-get install -y libgtk-3-dev libappindicator3-dev libxdo-dev
+    - name: Rust Cache
+      uses: swatinem/rust-cache@v2
     - name: Build
       run: cargo build --release --verbose
     - name: Upload Artifacts
@@ -39,9 +41,14 @@ jobs:
     runs-on: windows-latest
     steps:
     - uses: actions/checkout@v3
+    - name: Rust Cache
+      uses: swatinem/rust-cache@v2
     - name: Build
       run: cargo build --release --verbose
     - name: Install cargo-wix
+      # Only install if not cached/found? cargo-wix installation is fast, but cache helps.
+      # rust-cache caches ~/.cargo/bin by default too if configured, but default strictly caches dependencies.
+      # Let's just reinstall, it's quick.
       run: cargo install cargo-wix
     - name: Create MSI Installer
       run: cargo wix -p kmitlnetauth-tray --nocapture
@@ -83,6 +90,8 @@ jobs:
         context: .
         push: true
         tags: ghcr.io/${{ github.repository }}:latest
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
     - name: Build and push (Release Tag)
       if: startsWith(github.ref, 'refs/tags/')
       uses: docker/build-push-action@v4
@@ -92,3 +101,5 @@ jobs:
         tags: |
           ghcr.io/${{ github.repository }}:latest
           ghcr.io/${{ github.repository }}:${{ github.ref_name }}
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
