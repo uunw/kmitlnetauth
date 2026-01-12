@@ -24,6 +24,15 @@ jobs:
       run: |
         sudo apt-get update
         sudo apt-get install -y libgtk-3-dev libappindicator3-dev libxdo-dev rpm
+    - name: Set Version from Tag
+      if: startsWith(github.ref, 'refs/tags/')
+      shell: bash
+      run: |
+        TAG_VERSION=${GITHUB_REF#refs/tags/v}
+        echo "Setting version to $TAG_VERSION"
+        find . -name "Cargo.toml" -exec sed -i "s/^version = \".*\"/version = \"$TAG_VERSION\"/" {} +
+        # Allow cargo to update lockfile
+        cargo update -p kmitlnetauth-core -p kmitlnetauth-service -p kmitlnetauth-tray --dry-run || true
     - name: Rust Cache
       uses: swatinem/rust-cache@v2
     - name: Install Packaging Tools
@@ -58,6 +67,13 @@ jobs:
     runs-on: windows-latest
     steps:
     - uses: actions/checkout@v3
+    - name: Set Version from Tag
+      if: startsWith(github.ref, 'refs/tags/')
+      shell: bash
+      run: |
+        TAG_VERSION=${GITHUB_REF#refs/tags/v}
+        echo "Setting version to $TAG_VERSION"
+        find . -name "Cargo.toml" -exec sed -i "s/^version = \".*\"/version = \"$TAG_VERSION\"/" {} +
     - name: Rust Cache
       uses: swatinem/rust-cache@v2
     - name: Build
@@ -83,6 +99,13 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v3
+    - name: Set Version from Tag
+      if: startsWith(github.ref, 'refs/tags/')
+      shell: bash
+      run: |
+        TAG_VERSION=${GITHUB_REF#refs/tags/v}
+        echo "Setting version to $TAG_VERSION"
+        find . -name "Cargo.toml" -exec sed -i "s/^version = \".*\"/version = \"$TAG_VERSION\"/" {} +
     - name: Set up Docker Buildx
       uses: docker/setup-buildx-action@v2
     - name: Login to GitHub Container Registry
