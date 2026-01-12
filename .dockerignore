@@ -1,0 +1,9 @@
+# Ignore everything by default
+*
+
+# Allow these directories and files
+!Cargo.toml
+!Cargo.lock
+!crates/
+!.github/
+!Dockerfile
