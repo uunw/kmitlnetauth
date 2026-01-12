@@ -8,23 +8,28 @@ use std::env;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Config {
+    #[serde(default)]
     pub username: String,
     // Password is now optional in config file. If present, it will be migrated to keyring on load (if possible)
     // or used as fallback.
-    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(skip_serializing_if = "Option::is_none", default)]
     pub password: Option<String>, 
-    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(skip_serializing_if = "Option::is_none", default)]
     pub ip_address: Option<String>,
+    #[serde(default = "default_interval")]
     pub interval: u64,
+    #[serde(default = "default_max_attempt")]
     pub max_attempt: u32,
+    #[serde(default = "default_auto_login")]
     pub auto_login: bool,
     #[serde(default = "default_log_level")]
     pub log_level: String,
 }
 
-fn default_log_level() -> String {
-    "info".to_string()
-}
+fn default_interval() -> u64 { 300 }
+fn default_max_attempt() -> u32 { 20 }
+fn default_auto_login() -> bool { true }
+fn default_log_level() -> String { "info".to_string() }
 
 impl Default for Config {
     fn default() -> Self {
@@ -32,9 +37,9 @@ impl Default for Config {
             username: "".to_string(),
             password: None,
             ip_address: None,
-            interval: 300,
-            max_attempt: 20,
-            auto_login: true,
+            interval: default_interval(),
+            max_attempt: default_max_attempt(),
+            auto_login: default_auto_login(),
             log_level: default_log_level(),
         }
     }
@@ -44,8 +49,17 @@ impl Config {
     pub fn load(path: &PathBuf) -> Result<Self> {
         let mut config = if path.exists() {
             let content = fs::read_to_string(path)?;
-            serde_yaml::from_str(&content)
-                .map_err(|e| Error::Config(format!("Failed to parse YAML config: {}", e)))?
+            if content.trim().is_empty() {
+                Self::default()
+            } else {
+                match serde_yaml::from_str(&content) {
+                    Ok(c) => c,
+                    Err(e) => {
+                        warn!("Failed to parse YAML config (using defaults): {}", e);
+                        Self::default()
+                    }
+                }
+            }
         } else {
             Self::default()
         };
