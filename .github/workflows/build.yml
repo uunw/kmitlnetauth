@@ -23,21 +23,34 @@ jobs:
     - name: Install Dependencies
       run: |
         sudo apt-get update
-        sudo apt-get install -y libgtk-3-dev libappindicator3-dev libxdo-dev
+        sudo apt-get install -y libgtk-3-dev libappindicator3-dev libxdo-dev rpm
     - name: Rust Cache
       uses: swatinem/rust-cache@v2
+    - name: Install Packaging Tools
+      run: |
+        cargo install cargo-deb
+        cargo install cargo-generate-rpm
     - name: Build
       run: cargo build --release --verbose
+    - name: Build Packages
+      run: |
+        cargo deb -p kmitlnetauth-service --no-build
+        cargo generate-rpm -p kmitlnetauth-service
+        # Move rpm to target/debian for easier collection if needed, or just reference target/generate-rpm
     - name: Upload Artifacts
       uses: actions/upload-artifact@v4
       with:
-        name: linux-build
-        path: target/release/kmitlnetauth
-    - name: Release Linux Binary
+        name: linux-packages
+        path: |
+          target/debian/*.deb
+          target/generate-rpm/*.rpm
+    - name: Release Linux Packages
       if: startsWith(github.ref, 'refs/tags/')
       uses: softprops/action-gh-release@v1
       with:
-        files: target/release/kmitlnetauth
+        files: |
+          target/debian/*.deb
+          target/generate-rpm/*.rpm
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -50,28 +63,19 @@ jobs:
     - name: Build
       run: cargo build --release --verbose
     - name: Install cargo-wix
-      # Only install if not cached/found? cargo-wix installation is fast, but cache helps.
-      # rust-cache caches ~/.cargo/bin by default too if configured, but default strictly caches dependencies.
-      # Let's just reinstall, it's quick.
       run: cargo install cargo-wix
     - name: Create MSI Installer
       run: cargo wix -p kmitlnetauth-tray --nocapture
     - name: Upload Artifacts
       uses: actions/upload-artifact@v4
       with:
-        name: windows-build
-        path: |
-          target/release/kmitlnetauth.exe
-          target/release/kmitlnetauth-tray.exe
-          target/wix/*.msi
-    - name: Release Windows Binaries
+        name: windows-installer
+        path: target/wix/*.msi
+    - name: Release Windows Installer
       if: startsWith(github.ref, 'refs/tags/')
       uses: softprops/action-gh-release@v1
       with:
-        files: |
-          target/release/kmitlnetauth.exe
-          target/release/kmitlnetauth-tray.exe
-          target/wix/*.msi
+        files: target/wix/*.msi
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 

@@ -1,0 +1,7 @@
+#!/bin/sh
+set -e
+
+if [ "$1" = "remove" ]; then
+    systemctl stop kmitlnetauth.service || true
+    systemctl disable kmitlnetauth.service || true
+fi

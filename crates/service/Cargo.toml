@@ -24,5 +24,47 @@ dialoguer = "0.11"
 windows-service = "0.7"
 
 [target.'cfg(unix)'.dependencies]
+
 daemonize = "0.5"
+
 signal-hook = "0.3"
+
+
+
+[package.metadata.deb]
+
+name = "kmitlnetauth"
+
+maintainer = "Nonthaphan Inthawong <67015067@kmitl.ac.th>"
+
+copyright = "2026, Nonthaphan Inthawong "
+
+license-file = ["../../LICENSE", "0"]
+
+depends = "$auto"
+
+section = "utility"
+
+priority = "optional"
+
+assets = [
+
+    ["../../target/release/kmitlnetauth", "usr/bin/", "755"],
+
+    ["kmitlnetauth.service", "etc/systemd/system/", "644"]
+
+]
+
+maintainer-scripts = "debian/"
+
+
+
+[package.metadata.generate-rpm]
+
+assets = [
+
+    { source = "../../target/release/kmitlnetauth", dest = "/usr/bin/kmitlnetauth", mode = "755" },
+
+    { source = "kmitlnetauth.service", dest = "/etc/systemd/system/kmitlnetauth.service", mode = "644" }
+
+]
