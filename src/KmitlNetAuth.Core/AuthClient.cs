@@ -6,9 +6,6 @@ namespace KmitlNetAuth.Core;
 
 public sealed class AuthClient
 {
-    private const string LoginUrl = "https://portal.kmitl.ac.th:19008/portalauth/login";
-    private const string HeartbeatUrl = "https://nani.csc.kmitl.ac.th/network-api/data/";
-    private const string CheckUrl = "http://detectportal.firefox.com/success.txt";
     private const string Acip = "10.252.13.10";
 
     private readonly HttpClient _httpClient;
@@ -61,7 +58,7 @@ public sealed class AuthClient
 
         try
         {
-            var response = await _httpClient.PostAsync(LoginUrl, form, ct);
+            var response = await _httpClient.PostAsync(_config.PortalUrl, form, ct);
 
             if (response.IsSuccessStatusCode)
             {
@@ -88,14 +85,14 @@ public sealed class AuthClient
         var form = new FormUrlEncodedContent(new Dictionary<string, string>
         {
             ["username"] = _config.Username,
-            ["os"] = "Chrome v116.0.5845.141 on Windows 10 64-bit",
+            ["os"] = _config.HeartbeatUserAgent,
             ["speed"] = "1.29",
             ["newauth"] = "1",
         });
 
         try
         {
-            var response = await _httpClient.PostAsync(HeartbeatUrl, form, ct);
+            var response = await _httpClient.PostAsync(_config.HeartbeatUrl, form, ct);
 
             if (response.IsSuccessStatusCode)
             {
@@ -117,7 +114,7 @@ public sealed class AuthClient
     {
         try
         {
-            var response = await _httpClient.GetAsync(CheckUrl, ct);
+            var response = await _httpClient.GetAsync(_config.InternetCheckUrl, ct);
             var text = await response.Content.ReadAsStringAsync(ct);
             return text.Trim() == "success";
         }

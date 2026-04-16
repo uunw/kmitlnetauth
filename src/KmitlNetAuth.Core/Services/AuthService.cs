@@ -85,7 +85,7 @@ public sealed class AuthService : IAuthService
                 else
                 {
                     _logger.LogError("Max login attempts reached. Waiting...");
-                    await Task.Delay(TimeSpan.FromSeconds(60), ct);
+                    await Task.Delay(TimeSpan.FromSeconds(_config.BackoffInterval), ct);
                     loginAttempts = 0;
                 }
             }

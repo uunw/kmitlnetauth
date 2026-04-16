@@ -3,7 +3,7 @@ namespace KmitlNetAuth.Core;
 public static class ConfigPaths
 {
     private const string AppName = "kmitlnetauth";
-    private const string ConfigFileName = "config.yaml";
+    private const string ConfigFileName = "config.toml";
 
     public static string Resolve(string? explicitPath = null)
     {

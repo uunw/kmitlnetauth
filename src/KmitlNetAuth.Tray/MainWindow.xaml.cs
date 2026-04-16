@@ -153,7 +153,7 @@ public partial class MainWindow : FluentWindow
         if (_autoStartItem.Checked)
         {
             var exePath = Environment.ProcessPath
-                ?? System.Reflection.Assembly.GetExecutingAssembly().Location;
+                ?? System.IO.Path.Combine(AppContext.BaseDirectory, "kmitlnetauth-tray.exe");
             _autoStartManager.Enable(exePath);
         }
         else

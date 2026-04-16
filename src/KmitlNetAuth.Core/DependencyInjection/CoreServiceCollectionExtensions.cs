@@ -16,13 +16,15 @@ public static class CoreServiceCollectionExtensions
 
         services.AddHttpClient(HttpClientName, client =>
         {
-            client.Timeout = TimeSpan.FromSeconds(10);
+            client.Timeout = TimeSpan.FromSeconds(config.Timeout);
         })
         .ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler
         {
             CookieContainer = new CookieContainer(),
             UseCookies = true,
-            ServerCertificateCustomValidationCallback = HttpClientHandler.DangerousAcceptAnyServerCertificateValidator,
+            ServerCertificateCustomValidationCallback = config.AcceptInvalidCerts
+                ? HttpClientHandler.DangerousAcceptAnyServerCertificateValidator
+                : null,
         });
 
         // Platform-specific services

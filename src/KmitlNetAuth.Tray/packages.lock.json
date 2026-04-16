@@ -341,7 +341,7 @@
           "Microsoft.Extensions.Logging.Abstractions": "[10.0.6, )",
           "Microsoft.Extensions.Options": "[10.0.6, )",
           "System.Security.Cryptography.ProtectedData": "[10.0.6, )",
-          "YamlDotNet": "[16.3.0, )"
+          "Tomlyn": "[2.3.0, )"
         }
       },
       "Microsoft.Extensions.DependencyInjection.Abstractions": {
@@ -389,11 +389,11 @@
         "resolved": "10.0.6",
         "contentHash": "XsGj3pcZ4PIqz9Vhk7ymbL9iNQzOAnDzHmMBqK1rzjjfQBJ4AUZVJQWbDmTKUS8BIXX53QBDRrdiCpwdWfZM9A=="
       },
-      "YamlDotNet": {
+      "Tomlyn": {
         "type": "CentralTransitive",
-        "requested": "[16.3.0, )",
-        "resolved": "16.3.0",
-        "contentHash": "SgMOdxbz8X65z8hraIs6hOEdnkH6hESTAIUa7viEngHOYaH+6q5XJmwr1+yb9vJpNQ19hCQY69xbFsLtXpobQA=="
+        "requested": "[2.3.0, )",
+        "resolved": "2.3.0",
+        "contentHash": "kA3P/rsBD4HUio0Q67GUgYuWdfoV273HhQJmIRfJymKiZKEi1+xgjXTRW0OtcdEJqL4vTzDvKxbOMYR4tjBCPw=="
       }
     }
   }
