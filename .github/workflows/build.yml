@@ -18,6 +18,7 @@ jobs:
   build-linux:
     runs-on: ubuntu-latest
     strategy:
+      fail-fast: false
       matrix:
         include:
           - rid: linux-x64
@@ -98,7 +99,6 @@ jobs:
           Release: 1
           Summary: Auto-authentication service for KMITL network
           License: MIT
-          BuildArch: ${RPM_ARCH}
 
           %description
           A secure, cross-platform auto-authentication service for the KMITL network.
@@ -124,9 +124,11 @@ jobs:
           EOF
           sed -i 's/^          //' rpmbuild/SPECS/kmitlnetauth.spec
 
-          rpmbuild --define "_topdir $(pwd)/rpmbuild" --target ${RPM_ARCH} -bb rpmbuild/SPECS/kmitlnetauth.spec
-          mkdir -p ./publish/rpm
-          find rpmbuild/RPMS -name "*.rpm" -exec cp {} ./publish/rpm/ \;
+          rpmbuild --define "_topdir $(pwd)/rpmbuild" \
+            --define "_rpmdir $(pwd)/publish/rpm" \
+            --define "_build_name_fmt %%{NAME}-%%{VERSION}-%%{RELEASE}.${RPM_ARCH}.rpm" \
+            --buildarch ${RPM_ARCH} \
+            -bb rpmbuild/SPECS/kmitlnetauth.spec
 
       - uses: actions/upload-artifact@v4
         with:
