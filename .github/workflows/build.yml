@@ -269,27 +269,24 @@ jobs:
           path: artifacts
 
       - name: Prepare release assets
+        env:
+          VERSION: ${{ needs.version.outputs.version }}
         run: |
-          echo "=== Artifact structure ==="
-          find artifacts/ -type f | head -40
           mkdir -p release
 
           # Linux amd64
-          find artifacts/linux-amd64 -name "kmitlnetauth" -type f -exec cp {} release/kmitlnetauth-linux-amd64 \;
+          find artifacts/linux-amd64 -name "kmitlnetauth" -type f -exec cp {} release/kmitlnetauth-${VERSION}-x86_64 \;
           find artifacts/linux-amd64 -name "*.deb" -exec cp {} release/ \;
           find artifacts/linux-amd64 -name "*.rpm" -exec cp {} release/ \;
 
           # Linux arm64
-          find artifacts/linux-arm64 -name "kmitlnetauth" -type f -exec cp {} release/kmitlnetauth-linux-arm64 \;
+          find artifacts/linux-arm64 -name "kmitlnetauth" -type f -exec cp {} release/kmitlnetauth-${VERSION}-aarch64 \;
           find artifacts/linux-arm64 -name "*.deb" -exec cp {} release/ \;
           find artifacts/linux-arm64 -name "*.rpm" -exec cp {} release/ \;
 
-          # Windows
-          find artifacts/windows-x64 -name "kmitlnetauth.exe" -exec cp {} release/kmitlnetauth-win-x64.exe \;
-          find artifacts/windows-x64 -name "kmitlnetauth-tray.exe" -exec cp {} release/kmitlnetauth-tray-win-x64.exe \;
+          # Windows (MSI only - includes both CLI and Tray)
           find artifacts/windows-x64 -name "*.msi" -exec cp {} release/ \;
 
-          echo "=== Release assets ==="
           ls -lh release/
 
       - name: Create tag and release
@@ -298,13 +295,40 @@ jobs:
           VERSION: ${{ needs.version.outputs.version }}
         run: |
           TAG="v${VERSION}"
+          REPO_URL="https://github.com/${{ github.repository }}"
 
-          # Create tag
           git tag "$TAG"
           git push origin "$TAG"
 
-          # Create release
+          cat > /tmp/release-body.md <<EOF
+          ## Downloads
+
+          | Platform | x86-64 (64-bit) | AArch64 (ARM64) |
+          |---|---|---|
+          | **Windows** | [MSI Installer](${REPO_URL}/releases/download/${TAG}/kmitlnetauth-${VERSION}.msi) | - |
+          | **Debian / Ubuntu** | [.deb](${REPO_URL}/releases/download/${TAG}/kmitlnetauth_${VERSION}_amd64.deb) | [.deb](${REPO_URL}/releases/download/${TAG}/kmitlnetauth_${VERSION}_arm64.deb) |
+          | **RHEL / Fedora** | [.rpm](${REPO_URL}/releases/download/${TAG}/kmitlnetauth-${VERSION}-1.x86_64.rpm) | [.rpm](${REPO_URL}/releases/download/${TAG}/kmitlnetauth-${VERSION}-1.aarch64.rpm) |
+          | **Linux (binary)** | [Download](${REPO_URL}/releases/download/${TAG}/kmitlnetauth-${VERSION}-x86_64) | [Download](${REPO_URL}/releases/download/${TAG}/kmitlnetauth-${VERSION}-aarch64) |
+          | **Docker** | \`docker pull ghcr.io/${{ github.repository }}:${VERSION}\` ||
+
+          > **Windows MSI** includes both the CLI service and system tray application.
+          >
+          > **Docker** image supports both amd64 and arm64 architectures.
+
+          ## Quick Install
+
+          \`\`\`bash
+          # Debian/Ubuntu (x86_64)
+          curl -LO ${REPO_URL}/releases/download/${TAG}/kmitlnetauth_${VERSION}_amd64.deb
+          sudo dpkg -i kmitlnetauth_${VERSION}_amd64.deb
+
+          # Docker
+          docker run -d -e KMITL_USERNAME=670xxxxx -e KMITL_PASSWORD=xxx ghcr.io/${{ github.repository }}:${VERSION}
+          \`\`\`
+          EOF
+          sed -i 's/^          //' /tmp/release-body.md
+
           gh release create "$TAG" release/* \
             --title "v${VERSION}" \
-            --generate-notes \
+            --notes-file /tmp/release-body.md \
             --latest
