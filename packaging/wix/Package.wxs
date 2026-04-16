@@ -4,7 +4,7 @@
   <Package
     Name="KMITL NetAuth"
     Manufacturer="Nonthaphan Inthawong"
-    Version="!(bind.FileVersion.File_kmitlnetauth_exe)"
+    Version="!(bind.FileVersion.File_kmitlnetauth_tray_exe)"
     UpgradeCode="6D611230-2216-4318-8743-730107865261"
     Scope="perMachine">
 
@@ -27,7 +27,7 @@
         <Component Id="StartMenuShortcuts" Guid="C3D4E5F6-A7B8-9012-CDEF-123456789012">
           <Shortcut Id="TrayShortcut"
             Name="KMITL NetAuth"
-            Target="[INSTALLFOLDER]kmitlnetauth.exe"
+            Target="[INSTALLFOLDER]kmitlnetauth-tray.exe"
             WorkingDirectory="INSTALLFOLDER" />
           <Shortcut Id="UninstallShortcut"
             Name="Uninstall KMITL NetAuth"
@@ -44,7 +44,7 @@
       <Component Id="DesktopShortcut" Guid="D4E5F6A7-B8C9-0123-DEF0-123456789ABC">
         <Shortcut Id="DesktopTrayShortcut"
           Name="KMITL NetAuth"
-          Target="[INSTALLFOLDER]kmitlnetauth.exe"
+          Target="[INSTALLFOLDER]kmitlnetauth-tray.exe"
           WorkingDirectory="INSTALLFOLDER" />
         <RegistryValue Root="HKCU" Key="Software\KmitlNetAuth" Name="Desktop" Type="integer" Value="1" KeyPath="yes" />
       </Component>
@@ -58,11 +58,10 @@
       <ComponentRef Id="DesktopShortcut" />
     </Feature>
 
-    <!-- Launch Tray after install.
-         FileRef uses the stable ID produced by the CI-generated Files.wxs fragment. -->
-    <CustomAction Id="LaunchTray" FileRef="File_kmitlnetauth_exe" ExeCommand="" Return="asyncNoWait" />
+    <!-- Launch app after install or upgrade (not on uninstall) -->
+    <CustomAction Id="LaunchTray" FileRef="File_kmitlnetauth_tray_exe" ExeCommand="" Return="asyncNoWait" />
     <InstallExecuteSequence>
-      <Custom Action="LaunchTray" After="InstallFinalize" Condition="NOT Installed AND NOT REMOVE" />
+      <Custom Action="LaunchTray" After="InstallFinalize" Condition="NOT REMOVE" />
     </InstallExecuteSequence>
 
   </Package>

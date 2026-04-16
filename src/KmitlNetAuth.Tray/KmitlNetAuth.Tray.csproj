@@ -6,7 +6,7 @@
     <UseWPF>true</UseWPF>
     <UseWindowsForms>true</UseWindowsForms>
     <RootNamespace>KmitlNetAuth.Tray</RootNamespace>
-    <AssemblyName>kmitlnetauth</AssemblyName>
+    <AssemblyName>kmitlnetauth-tray</AssemblyName>
     <AssemblyTitle>KMITL NetAuth</AssemblyTitle>
     <FileDescription>KMITL NetAuth</FileDescription>
     <Product>KMITL NetAuth</Product>

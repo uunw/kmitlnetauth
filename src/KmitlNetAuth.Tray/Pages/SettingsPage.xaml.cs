@@ -83,7 +83,7 @@ public partial class SettingsPage : Page
         if (AutoStartToggle.IsChecked == true)
         {
             var exePath = Environment.ProcessPath
-                ?? System.IO.Path.Combine(AppContext.BaseDirectory, "kmitlnetauth.exe");
+                ?? System.IO.Path.Combine(AppContext.BaseDirectory, "kmitlnetauth-tray.exe");
             _autoStartManager.Enable(exePath);
             AutoStartStatus.Text = "Currently enabled";
         }
