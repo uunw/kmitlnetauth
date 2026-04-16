@@ -199,13 +199,30 @@ jobs:
             publish/*.msi
 
   build-docker:
-    needs: version
+    needs: [version, build-linux]
     runs-on: ubuntu-latest
     permissions:
       contents: read
       packages: write
     steps:
       - uses: actions/checkout@v6
+
+      - uses: actions/download-artifact@v7
+        with:
+          name: linux-amd64
+          path: docker-bin/amd64
+
+      - uses: actions/download-artifact@v7
+        with:
+          name: linux-arm64
+          path: docker-bin/arm64
+
+      - name: Prepare per-platform binaries
+        run: |
+          mkdir -p docker-ctx/amd64 docker-ctx/arm64
+          cp docker-bin/amd64/publish/linux-x64/kmitlnetauth docker-ctx/amd64/
+          cp docker-bin/arm64/publish/linux-arm64/kmitlnetauth docker-ctx/arm64/
+          chmod +x docker-ctx/amd64/kmitlnetauth docker-ctx/arm64/kmitlnetauth
 
       - uses: docker/setup-qemu-action@v4
 
@@ -234,7 +251,6 @@ jobs:
           push: ${{ github.event_name != 'pull_request' }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
-          build-args: VERSION=${{ needs.version.outputs.version }}
           provenance: false
           cache-from: type=gha
           cache-to: type=gha,mode=max

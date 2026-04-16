@@ -1,28 +1,5 @@
-FROM mcr.microsoft.com/dotnet/sdk:10.0-alpine AS build
-ARG VERSION=0.0.0.1
-ARG TARGETARCH
-WORKDIR /src
-
-# Map Docker TARGETARCH to .NET RID
-RUN if [ "$TARGETARCH" = "arm64" ]; then echo "linux-musl-arm64" > /tmp/rid; else echo "linux-musl-x64" > /tmp/rid; fi
-
-# Copy project files for layer caching
-COPY global.json Directory.Build.props Directory.Packages.props ./
-COPY src/KmitlNetAuth.Core/KmitlNetAuth.Core.csproj src/KmitlNetAuth.Core/
-COPY src/KmitlNetAuth.Cli/KmitlNetAuth.Cli.csproj src/KmitlNetAuth.Cli/
-RUN dotnet restore src/KmitlNetAuth.Cli/KmitlNetAuth.Cli.csproj -r $(cat /tmp/rid)
-
-# Copy source and publish
-COPY src/ src/
-RUN dotnet publish src/KmitlNetAuth.Cli/KmitlNetAuth.Cli.csproj \
-    -c Release \
-    -r $(cat /tmp/rid) \
-    --self-contained true \
-    -p:PublishSingleFile=true \
-    -p:Version=${VERSION} \
-    -o /app/publish
-
 FROM mcr.microsoft.com/dotnet/runtime-deps:10.0-alpine
+ARG TARGETARCH
 WORKDIR /app
 
 ENV KMITL_USERNAME=""
@@ -35,7 +12,8 @@ ENV KMITL_LOG_LEVEL=Information
 
 RUN apk add --no-cache ca-certificates
 
-COPY --from=build /app/publish/kmitlnetauth .
-COPY packaging/systemd/kmitlnetauth.service /etc/systemd/system/
+# CI places pre-built binaries at docker-ctx/<arch>/kmitlnetauth
+COPY docker-ctx/${TARGETARCH}/kmitlnetauth /app/kmitlnetauth
+RUN chmod +x /app/kmitlnetauth
 
 ENTRYPOINT ["./kmitlnetauth", "-d"]

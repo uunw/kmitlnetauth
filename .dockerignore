@@ -1,8 +1,3 @@
 *
-!src/**/*.csproj
-!src/**/*.cs
-!global.json
-!Directory.Build.props
-!Directory.Packages.props
-!packaging/systemd/kmitlnetauth.service
+!docker-ctx/
 !Dockerfile
