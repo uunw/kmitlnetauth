@@ -16,5 +16,6 @@
     <RepositoryType>git</RepositoryType>
     <RepositoryUrl>https://github.com/uunw/kmitlnetauth</RepositoryUrl>
     <EnableWindowsTargeting>true</EnableWindowsTargeting>
+    <RestorePackagesWithLockFile>true</RestorePackagesWithLockFile>
   </PropertyGroup>
 </Project>
