@@ -274,6 +274,7 @@ jobs:
       - name: Build MSI
         run: >
           wix build packaging/wix/Package.wxs ./publish/Files.wxs
+          -arch x64
           -ext WixToolset.UI.wixext
           -bindpath PublishDir=./publish/win-x64
           -o ./publish/kmitlnetauth-${{ needs.version.outputs.version }}.msi
