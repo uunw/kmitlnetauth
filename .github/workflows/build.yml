@@ -24,6 +24,7 @@ jobs:
         with:
           dotnet-version: ${{ env.DOTNET_VERSION }}
           cache: true
+          cache-dependency-path: 'src/*/packages.lock.json'
 
       - name: Set version
         run: |
@@ -145,6 +146,7 @@ jobs:
         with:
           dotnet-version: ${{ env.DOTNET_VERSION }}
           cache: true
+          cache-dependency-path: 'src/*/packages.lock.json'
 
       - name: Set version
         shell: bash
