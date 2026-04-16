@@ -7,10 +7,11 @@ A secure, cross-platform auto-authentication service for the KMITL network. Buil
 - **Auto-Reconnect** - Monitors connection and re-authenticates automatically
 - **Secure Credentials** - Passwords stored via Windows DPAPI or encrypted file (Linux), never in plain text
 - **Cross-Platform** - Windows 10+ (MSI + system tray), Linux (DEB/RPM + systemd), Docker
-- **System Tray** - Windows tray app with Fluent UI (WPF), auto-login, auto-start, settings, auto-update
+- **System Tray** - Windows tray app with Fluent UI (WPF), settings wizard, auto-update with download
 - **CLI** - Interactive setup wizard, status display, daemon mode (`-d`)
-- **Notifications** - Desktop notifications on connection state changes
-- **Log Rotation** - Daily rotating log files
+- **Auto-Update** - Checks GitHub releases, downloads and installs updates automatically (Windows)
+- **TOML Config** - Grouped, commented config file with environment variable overrides
+- **Log Rotation** - Daily rotating log files with configurable retention
 
 ## Quick Start
 
@@ -39,13 +40,13 @@ KmitlNetAuth.sln
 
 | Component | Description |
 |---|---|
-| **Core** | Auth client (login, heartbeat, internet check), YAML config with env var overrides, credential storage, notifications, auto-start |
-| **CLI** | `System.CommandLine` with subcommands (setup, status, config), `Serilog` logging, `Microsoft.Extensions.Hosting` for daemon/systemd/Windows Service |
-| **Tray** | WPF with Fluent UI (wpfui), system tray, settings window, auto-update with download, console log viewer |
+| **Core** | Auth client, TOML config with env var overrides, credential storage (DPAPI/AES), notifications, auto-start |
+| **CLI** | `System.CommandLine` with subcommands, `Serilog` logging, systemd/Windows Service integration |
+| **Tray** | WPF with Fluent UI (wpfui), system tray, settings window, auto-update with MSI download, console log viewer |
 
 ## Quick Login (Headless Linux)
 
-Need internet on a headless server before you can install anything?
+Need internet on a headless server (e.g., Proxmox) before you can install anything?
 
 ```bash
 bash scripts/kmitl-login.sh
@@ -60,9 +61,18 @@ curl -sk -X POST "https://portal.kmitl.ac.th:19008/portalauth/login" \
 
 ## Installation
 
-See the **[Full Installation Guide](docs/INSTALL.md)** for all platforms (Linux, Windows, Docker) with step-by-step instructions including build-from-source.
+See the **[Full Installation Guide](docs/INSTALL.md)** for all platforms with step-by-step instructions.
 
 Quick links: [Debian/Ubuntu](docs/INSTALL.md#linux---install-from-github-releases) | [RHEL/CentOS](docs/INSTALL.md#linux---install-from-github-releases) | [Windows MSI](docs/INSTALL.md#windows---msi-installer) | [Docker](docs/INSTALL.md#docker) | [Build from source](docs/INSTALL.md#linux---build-from-source)
+
+### Deployment Strategy
+
+| Format | Type | Size | Runtime Required? |
+|---|---|---|---|
+| Linux standalone binary | Self-contained, single-file | ~14 MB | No |
+| `.deb` / `.rpm` | Framework-dependent | ~1-2 MB | Yes (`dotnet-runtime-10.0`) |
+| Windows `.msi` | Framework-dependent | ~8 MB | Yes (.NET 10 Runtime, auto-prompted) |
+| Docker | Self-contained | ~14 MB | No |
 
 ### Docker
 
@@ -75,20 +85,34 @@ docker run -d \
 
 ## Configuration
 
-Default config locations:
-- **Linux:** `/etc/kmitlnetauth/config.yaml` or `~/.config/kmitlnetauth/config.yaml`
-- **Windows:** `%APPDATA%\kmitlnetauth\config.yaml`
+TOML config with grouped sections. Default locations:
+- **Linux:** `/etc/kmitlnetauth/config.toml` or `~/.config/kmitlnetauth/config.toml`
+- **Windows:** `%APPDATA%\kmitlnetauth\config.toml`
 
-```yaml
-username: "670xxxxx"
-ip_address: "10.x.x.x"
-interval: 300
-max_attempt: 20
-auto_login: true
-log_level: Information
+```toml
+[auth]
+username = "670xxxxx"
+ip_address = ""                        # Leave empty for auto-detect
+
+[service]
+interval = 300                         # Heartbeat interval (seconds)
+max_attempt = 20                       # Max login retries before backoff
+auto_login = true
+
+[logging]
+level = "Information"                  # Verbose / Debug / Information / Warning / Error
+
+[notifications]
+enabled = true
+
+[update]
+auto_check = true
+check_interval_hours = 24
 ```
 
 All settings can be overridden via environment variables (`KMITL_USERNAME`, `KMITL_PASSWORD`, `KMITL_IP`, etc.).
+
+See [docs/INSTALL.md#configuration-reference](docs/INSTALL.md#configuration-reference) for the full list.
 
 ## Development
 
@@ -108,32 +132,19 @@ dotnet build
 # CLI
 dotnet run --project src/KmitlNetAuth.Cli
 
-# Tray (Windows only)
+# Tray (Windows 10+ only)
 dotnet run --project src/KmitlNetAuth.Tray
-```
-
-### Publish
-
-```bash
-# Linux self-contained binary
-dotnet publish src/KmitlNetAuth.Cli -c Release -r linux-x64 --self-contained /p:PublishSingleFile=true
-
-# Windows self-contained binary
-dotnet publish src/KmitlNetAuth.Cli -c Release -r win-x64 --self-contained /p:PublishSingleFile=true
 ```
 
 ## CI/CD
 
-GitHub Actions builds on every push:
-- **Linux:** Binary + `.deb` + `.rpm`
-- **Windows:** Binary + `.msi`
-- **Docker:** Image pushed to `ghcr.io`
+GitHub Actions auto-builds and releases on every push to main:
+- **Linux:** Standalone binary (x64 + arm64) + `.deb` + `.rpm`
+- **Windows:** `.msi` installer (x64)
+- **Docker:** Multi-arch image pushed to `ghcr.io/uunw/kmitlnetauth`
+- **Release:** Auto-tagged with date-based version (`YYYYMMDD.N`)
 
-Releases are created automatically on tag push (`v*`).
-
-### Version Format
-
-Date-based: `YYYYMMDD.N` (e.g., `20260416.0`)
+Dependabot keeps NuGet packages, GitHub Actions, and Docker base images up to date.
 
 ## Contributing
 

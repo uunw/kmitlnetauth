@@ -264,9 +264,13 @@ jobs:
           Write-Host "Generated Files.wxs with $($files.Count) files"
           Get-Content "./publish/Files.wxs"
 
+      - name: Add WiX UI extension
+        run: wix extension add WixToolset.UI.wixext/5.0.2
+
       - name: Build MSI
         run: >
           wix build packaging/wix/Package.wxs ./publish/Files.wxs
+          -ext WixToolset.UI.wixext
           -bindpath PublishDir=./publish/win-x64
           -o ./publish/kmitlnetauth-${{ needs.version.outputs.version }}.msi
 

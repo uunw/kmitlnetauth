@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs">
+<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs"
+     xmlns:ui="http://wixtoolset.org/schemas/v4/wxs/ui">
   <Package
     Name="KMITL NetAuth"
     Manufacturer="Nonthaphan Inthawong"
@@ -11,6 +12,9 @@
       DowngradeErrorMessage="A newer version of KMITL NetAuth is already installed." />
 
     <MediaTemplate EmbedCab="yes" />
+
+    <!-- Install wizard UI -->
+    <ui:WixUI Id="WixUI_InstallDir" InstallDirectory="INSTALLFOLDER" />
 
     <!-- Install directory: all framework-dependent DLLs + EXEs go here -->
     <StandardDirectory Id="ProgramFiles64Folder">
