@@ -74,7 +74,6 @@ jobs:
           chmod 755 ./publish/deb/kmitlnetauth_${{ env.VERSION }}_amd64/DEBIAN/prerm
 
           dpkg-deb --build ./publish/deb/kmitlnetauth_${{ env.VERSION }}_amd64
-          mv ./publish/deb/kmitlnetauth_${{ env.VERSION }}_amd64.deb ./publish/deb/
 
       - name: Build .rpm package
         run: |
@@ -203,6 +202,9 @@ jobs:
 
   build-docker:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
     steps:
       - uses: actions/checkout@v4
 
