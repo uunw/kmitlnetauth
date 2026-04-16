@@ -4,12 +4,13 @@
   <Package
     Name="KMITL NetAuth"
     Manufacturer="Nonthaphan Inthawong"
-    Version="!(bind.FileVersion.File_kmitlnetauth_tray_exe)"
+    Version="!(wix.MsiVersion)"
     UpgradeCode="6D611230-2216-4318-8743-730107865261"
     Scope="perMachine"
     InstallerVersion="500">
 
     <MajorUpgrade
+      AllowSameVersionUpgrades="yes"
       DowngradeErrorMessage="A newer version of KMITL NetAuth is already installed." />
 
     <MediaTemplate EmbedCab="yes" />
