@@ -32,6 +32,8 @@ public partial class App : System.Windows.Application
                 retainedFileCountLimit: 14)
             .CreateLogger();
 
+        CrashHandler.Register(logDir);
+
         var builder = Host.CreateApplicationBuilder();
         builder.Services.AddSerilog();
         builder.Services.AddKmitlNetAuth(config);
