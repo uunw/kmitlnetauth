@@ -15,8 +15,11 @@
 
     <MediaTemplate EmbedCab="yes" />
 
-    <!-- Install wizard UI -->
+    <!-- Install wizard UI. WixUI_InstallDir includes a LicenseAgreementDlg
+         in its default dialog sequence. The WixUILicenseRtf variable below
+         points the dialog at our custom EULA. -->
     <ui:WixUI Id="WixUI_InstallDir" InstallDirectory="INSTALLFOLDER" />
+    <WixVariable Id="WixUILicenseRtf" Value="packaging/wix/License.rtf" />
 
     <!-- Install directory: all framework-dependent DLLs + EXEs go here -->
     <StandardDirectory Id="ProgramFiles64Folder">
