@@ -236,7 +236,7 @@ jobs:
         run: dotnet tool install --global wix
 
       - name: Accept WiX OSMF EULA
-        run: wix eula accept
+        run: wix eula accept wix7
 
       # Generate a WiX fragment that lists every file from the publish folder.
       # Each file becomes its own Component (WiX best practice for per-file ref-counting).
