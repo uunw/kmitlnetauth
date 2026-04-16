@@ -41,36 +41,25 @@ jobs:
           -c Release
           -r linux-x64
           --self-contained true
-          /p:PublishSingleFile=true
-          /p:Version=${{ env.VERSION }}
+          -p:PublishSingleFile=true
+          -p:Version=${{ env.VERSION }}
           -o ./publish/linux-x64
 
       - name: Copy packaging assets
         run: |
           cp packaging/systemd/kmitlnetauth.service ./publish/linux-x64/
 
-      - name: Install dotnet-deb
-        run: dotnet tool install --global dotnet-deb
+      - name: Install packaging tools
+        run: |
+          dotnet tool install --global dotnet-deb
+          dotnet tool install --global dotnet-rpm
 
       - name: Build .deb package
-        run: >
-          dotnet deb
-          -c Release
-          -r linux-x64
-          /p:Version=${{ env.VERSION }}
-          -o ./publish/deb
+        run: dotnet deb -c Release -r linux-x64 -o ../../publish/deb
         working-directory: src/KmitlNetAuth.Cli
 
-      - name: Install dotnet-rpm
-        run: dotnet tool install --global dotnet-rpm
-
       - name: Build .rpm package
-        run: >
-          dotnet rpm
-          -c Release
-          -r linux-x64
-          /p:Version=${{ env.VERSION }}
-          -o ./publish/rpm
+        run: dotnet rpm -c Release -r linux-x64 -o ../../publish/rpm
         working-directory: src/KmitlNetAuth.Cli
 
       - uses: actions/upload-artifact@v4
@@ -117,8 +106,8 @@ jobs:
           -c Release
           -r win-x64
           --self-contained true
-          /p:PublishSingleFile=true
-          /p:Version=${{ env.VERSION }}
+          -p:PublishSingleFile=true
+          -p:Version=${{ env.VERSION }}
           -o ./publish/win-x64-cli
 
       - name: Publish Tray (win-x64)
@@ -127,12 +116,12 @@ jobs:
           -c Release
           -r win-x64
           --self-contained true
-          /p:PublishSingleFile=true
-          /p:Version=${{ env.VERSION }}
+          -p:PublishSingleFile=true
+          -p:Version=${{ env.VERSION }}
           -o ./publish/win-x64-tray
 
-      - name: Install WiX Toolset
-        run: dotnet tool install --global wix
+      - name: Install WiX Toolset v5
+        run: dotnet tool install --global wix --version 5.0.2
 
       - name: Build MSI
         run: >
