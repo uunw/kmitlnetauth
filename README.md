@@ -53,7 +53,7 @@ See [Installation Guide](docs/INSTALL-PACKAGES.md) for detailed instructions.
 docker run -d \
   -e KMITL_USERNAME="670xxxxx" \
   -e KMITL_PASSWORD="your_password" \
-  ghcr.io/OWNER/kmitlnetauth:latest
+  ghcr.io/uunw/kmitlnetauth:latest
 ```
 
 ## Configuration

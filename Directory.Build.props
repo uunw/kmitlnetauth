@@ -10,6 +10,7 @@
     <Product>KmitlNetAuth</Product>
     <Description>Auto-authentication service for KMITL network</Description>
     <RepositoryType>git</RepositoryType>
+    <RepositoryUrl>https://github.com/uunw/kmitlnetauth</RepositoryUrl>
     <EnableWindowsTargeting>true</EnableWindowsTargeting>
   </PropertyGroup>
 </Project>

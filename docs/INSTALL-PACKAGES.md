@@ -8,7 +8,7 @@ Download and install the latest `.deb` package:
 
 ```bash
 # Download latest release
-curl -LO https://github.com/OWNER/kmitlnetauth/releases/latest/download/kmitlnetauth_amd64.deb
+curl -LO https://github.com/uunw/kmitlnetauth/releases/latest/download/kmitlnetauth_amd64.deb
 
 # Install
 sudo dpkg -i kmitlnetauth_*.deb
@@ -53,7 +53,7 @@ sudo apt remove kmitlnetauth
 
 ```bash
 # Download latest release
-sudo rpm -i https://github.com/OWNER/kmitlnetauth/releases/latest/download/kmitlnetauth.x86_64.rpm
+sudo rpm -i https://github.com/uunw/kmitlnetauth/releases/latest/download/kmitlnetauth.x86_64.rpm
 ```
 
 ### First-time setup
@@ -75,7 +75,7 @@ sudo rpm -e kmitlnetauth
 
 ### MSI Installer (Recommended)
 
-1. Download the latest `.msi` from [GitHub Releases](https://github.com/OWNER/kmitlnetauth/releases/latest)
+1. Download the latest `.msi` from [GitHub Releases](https://github.com/uunw/kmitlnetauth/releases/latest)
 2. Run the installer
 3. The tray app will launch automatically after installation
 4. Right-click the tray icon to configure settings
@@ -114,7 +114,7 @@ docker run -d \
   --restart unless-stopped \
   -e KMITL_USERNAME="670xxxxx" \
   -e KMITL_PASSWORD="your_password" \
-  ghcr.io/OWNER/kmitlnetauth:latest
+  ghcr.io/uunw/kmitlnetauth:latest
 ```
 
 ### With custom settings
@@ -130,7 +130,7 @@ docker run -d \
   -e KMITL_MAX_ATTEMPT=20 \
   -e KMITL_AUTO_LOGIN=true \
   -e KMITL_LOG_LEVEL=Information \
-  ghcr.io/OWNER/kmitlnetauth:latest
+  ghcr.io/uunw/kmitlnetauth:latest
 ```
 
 ### Docker Compose
@@ -138,7 +138,7 @@ docker run -d \
 ```yaml
 services:
   kmitlnetauth:
-    image: ghcr.io/OWNER/kmitlnetauth:latest
+    image: ghcr.io/uunw/kmitlnetauth:latest
     restart: unless-stopped
     environment:
       KMITL_USERNAME: "670xxxxx"
