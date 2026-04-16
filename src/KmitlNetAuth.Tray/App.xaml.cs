@@ -40,15 +40,30 @@ public partial class App : System.Windows.Application
         builder.Services.AddHostedService<AuthWorker>();
 
         _host = builder.Build();
-        _ = _host.StartAsync();
 
-        var needsSetup = string.IsNullOrEmpty(config.Username);
+        // First-run wizard: username is empty -> force completion BEFORE the
+        // hosted AuthWorker starts, so it picks up the saved credentials.
+        var wizardRan = false;
+        if (string.IsNullOrWhiteSpace(config.Username))
+        {
+            var setup = new SetupWindow(_host.Services, configPath);
+            var ok = setup.ShowDialog();
+            if (ok != true)
+            {
+                Shutdown();
+                return;
+            }
+            wizardRan = true;
+        }
+
+        _ = _host.StartAsync();
 
         var mainWindow = new MainWindow(_host.Services, configPath);
         MainWindow = mainWindow;
 
-        // Always show window on first-time setup; otherwise respect StartMinimized
-        if (needsSetup || !config.StartMinimized)
+        // First-run: always show (user just configured and expects to see it).
+        // Subsequent runs: respect StartMinimized preference.
+        if (wizardRan || !config.StartMinimized)
         {
             mainWindow.Show();
         }

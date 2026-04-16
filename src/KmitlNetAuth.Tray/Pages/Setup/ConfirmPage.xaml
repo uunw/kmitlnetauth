@@ -1,0 +1,84 @@
+<Page x:Class="KmitlNetAuth.Tray.Pages.Setup.ConfirmPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+    Title="Confirm"
+    Background="Transparent">
+    <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="32,24">
+        <StackPanel MaxWidth="520" HorizontalAlignment="Center">
+
+            <!-- Heading -->
+            <TextBlock Text="Review &amp; Finish"
+                       FontSize="26" FontWeight="Bold"
+                       Margin="0,0,0,4"
+                       Foreground="{DynamicResource TextFillColorPrimaryBrush}" />
+            <TextBlock Text="Please review your information before saving."
+                       FontSize="13"
+                       Margin="0,0,0,24"
+                       Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+
+            <!-- Summary card -->
+            <ui:Card Padding="20" Margin="0,0,0,16">
+                <StackPanel>
+                    <!-- Student ID -->
+                    <TextBlock Text="Student ID"
+                               FontSize="12"
+                               Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                               Margin="0,0,0,4" />
+                    <TextBlock x:Name="UsernameSummary"
+                               Text="-"
+                               FontSize="16" FontWeight="SemiBold"
+                               Margin="0,0,0,14" />
+
+                    <!-- Password -->
+                    <TextBlock Text="Password"
+                               FontSize="12"
+                               Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                               Margin="0,0,0,4" />
+                    <TextBlock x:Name="PasswordSummary"
+                               Text="-"
+                               FontSize="16" FontWeight="SemiBold"
+                               FontFamily="Consolas,Segoe UI"
+                               Margin="0,0,0,14" />
+
+                    <!-- IP -->
+                    <TextBlock Text="IP Address"
+                               FontSize="12"
+                               Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                               Margin="0,0,0,4" />
+                    <TextBlock x:Name="IpSummary"
+                               Text="Auto-detect"
+                               FontSize="16" FontWeight="SemiBold" />
+                </StackPanel>
+            </ui:Card>
+
+            <!-- Info card explaining what will happen -->
+            <ui:Card Padding="16" Margin="0,0,0,8">
+                <StackPanel Orientation="Horizontal">
+                    <ui:SymbolIcon Symbol="Info24"
+                                   FontSize="20"
+                                   Foreground="{DynamicResource SystemAccentColorSecondaryBrush}"
+                                   Margin="0,2,12,0"
+                                   VerticalAlignment="Top" />
+                    <StackPanel>
+                        <TextBlock Text="What happens next"
+                                   FontSize="13" FontWeight="SemiBold"
+                                   Margin="0,0,0,4" />
+                        <TextBlock TextWrapping="Wrap"
+                                   FontSize="12"
+                                   LineHeight="18"
+                                   Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                                   Text="Your credentials will be saved securely using Windows DPAPI. Auto-login will start immediately, and KMITL NetAuth will live in your system tray. You can change these settings anytime from the Settings page." />
+                    </StackPanel>
+                </StackPanel>
+            </ui:Card>
+
+            <TextBlock Text="Click Finish to save and start auto-login."
+                       HorizontalAlignment="Center"
+                       TextAlignment="Center"
+                       FontSize="12"
+                       Margin="0,8,0,0"
+                       Foreground="{DynamicResource TextFillColorTertiaryBrush}" />
+        </StackPanel>
+    </ScrollViewer>
+</Page>
