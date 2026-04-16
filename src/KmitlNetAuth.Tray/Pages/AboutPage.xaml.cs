@@ -1,7 +1,12 @@
+using System.Diagnostics;
+using System.IO;
 using System.Reflection;
 using System.Runtime.Versioning;
 using System.Windows;
 using System.Windows.Controls;
+using KmitlNetAuth.Core;
+using Serilog;
+using MessageBox = System.Windows.MessageBox;
 
 namespace KmitlNetAuth.Tray.Pages;
 
@@ -9,6 +14,7 @@ namespace KmitlNetAuth.Tray.Pages;
 public partial class AboutPage : Page
 {
     private readonly UpdateChecker _updateChecker;
+    private readonly string _logDir;
     private string? _pendingMsiUrl;
 
     public AboutPage(UpdateChecker updateChecker)
@@ -16,10 +22,37 @@ public partial class AboutPage : Page
         InitializeComponent();
 
         _updateChecker = updateChecker;
+        _logDir = ConfigPaths.GetLogDirectory();
 
         var version = GetCurrentVersion();
         VersionText.Text = $"Version {version}";
         UpdateStatusText.Text = "Click the button to check for updates.";
+        LogDirText.Text = _logDir;
+    }
+
+    private void OnOpenLogFolderClicked(object sender, RoutedEventArgs e)
+    {
+        try
+        {
+            // Ensure the folder exists before asking Explorer to open it,
+            // otherwise the user gets a confusing "path not found" dialog on
+            // a clean machine that has not emitted any logs yet.
+            Directory.CreateDirectory(_logDir);
+
+            Process.Start(new ProcessStartInfo(_logDir)
+            {
+                UseShellExecute = true,
+            });
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "Failed to open log folder {Path}", _logDir);
+            MessageBox.Show(
+                $"Could not open log folder:\n{_logDir}\n\n{ex.Message}",
+                "KMITL NetAuth",
+                MessageBoxButton.OK,
+                MessageBoxImage.Warning);
+        }
     }
 
     private async void OnCheckUpdateClicked(object sender, RoutedEventArgs e)
