@@ -52,7 +52,8 @@ jobs:
       - name: Restore
         run: dotnet restore
 
-      - name: Publish CLI (${{ matrix.rid }})
+      # Standalone self-contained binary for GitHub Releases direct download
+      - name: Publish CLI - standalone (${{ matrix.rid }})
         run: >
           dotnet publish src/KmitlNetAuth.Cli/KmitlNetAuth.Cli.csproj
           -c Release
@@ -60,16 +61,39 @@ jobs:
           --self-contained true
           -p:PublishSingleFile=true
           -p:Version=${{ needs.version.outputs.version }}
-          -o ./publish/${{ matrix.rid }}
+          -o ./publish/standalone/${{ matrix.rid }}
+
+      # Framework-dependent output for .deb/.rpm packages (requires dotnet-runtime-10.0)
+      - name: Publish CLI - framework-dependent (${{ matrix.rid }})
+        run: >
+          dotnet publish src/KmitlNetAuth.Cli/KmitlNetAuth.Cli.csproj
+          -c Release
+          -r ${{ matrix.rid }}
+          --self-contained false
+          -p:PublishSingleFile=false
+          -p:PublishTrimmed=false
+          -p:Version=${{ needs.version.outputs.version }}
+          -o ./publish/fdd/${{ matrix.rid }}
 
       - name: Build .deb package
         run: |
           PKG=kmitlnetauth_${{ needs.version.outputs.version }}_${{ matrix.arch }}
           mkdir -p ./publish/deb/${PKG}/DEBIAN
+          mkdir -p ./publish/deb/${PKG}/usr/lib/kmitlnetauth
           mkdir -p ./publish/deb/${PKG}/usr/bin
           mkdir -p ./publish/deb/${PKG}/etc/systemd/system
 
-          cp ./publish/${{ matrix.rid }}/kmitlnetauth ./publish/deb/${PKG}/usr/bin/
+          # Install framework-dependent assemblies to /usr/lib/kmitlnetauth/
+          cp -r ./publish/fdd/${{ matrix.rid }}/* ./publish/deb/${PKG}/usr/lib/kmitlnetauth/
+
+          # Create wrapper script at /usr/bin/kmitlnetauth
+          cat > ./publish/deb/${PKG}/usr/bin/kmitlnetauth <<'WRAPPER'
+          #!/bin/bash
+          exec dotnet /usr/lib/kmitlnetauth/kmitlnetauth.dll "$@"
+          WRAPPER
+          sed -i 's/^          //' ./publish/deb/${PKG}/usr/bin/kmitlnetauth
+          chmod 755 ./publish/deb/${PKG}/usr/bin/kmitlnetauth
+
           cp packaging/systemd/kmitlnetauth.service ./publish/deb/${PKG}/etc/systemd/system/
 
           cat > ./publish/deb/${PKG}/DEBIAN/control <<EOF
@@ -78,6 +102,7 @@ jobs:
           Section: net
           Priority: optional
           Architecture: ${{ matrix.arch }}
+          Depends: dotnet-runtime-10.0
           Maintainer: Nonthaphan Inthawong <67015067@kmitl.ac.th>
           Description: Auto-authentication service for KMITL network
           EOF
@@ -101,7 +126,8 @@ jobs:
           sudo apt-get install -y rpm
           mkdir -p rpmbuild/{SPECS,BUILD,RPMS,SOURCES}
 
-          cp ./publish/${{ matrix.rid }}/kmitlnetauth rpmbuild/SOURCES/
+          # Copy framework-dependent output for RPM
+          cp -r ./publish/fdd/${{ matrix.rid }} rpmbuild/SOURCES/app
           cp packaging/systemd/kmitlnetauth.service rpmbuild/SOURCES/
 
           if [ "${{ matrix.arch }}" = "amd64" ]; then RPM_ARCH="x86_64"; else RPM_ARCH="aarch64"; fi
@@ -112,18 +138,28 @@ jobs:
           Release: 1
           Summary: Auto-authentication service for KMITL network
           License: MIT
+          Requires: dotnet-runtime-10.0
 
           %description
           A secure, cross-platform auto-authentication service for the KMITL network.
 
           %install
+          mkdir -p %{buildroot}/usr/lib/kmitlnetauth
           mkdir -p %{buildroot}/usr/bin
           mkdir -p %{buildroot}/etc/systemd/system
-          cp %{_sourcedir}/kmitlnetauth %{buildroot}/usr/bin/
+          cp -r %{_sourcedir}/app/* %{buildroot}/usr/lib/kmitlnetauth/
           cp %{_sourcedir}/kmitlnetauth.service %{buildroot}/etc/systemd/system/
+
+          # Create wrapper script
+          cat > %{buildroot}/usr/bin/kmitlnetauth <<'WRAPPER'
+          #!/bin/bash
+          exec dotnet /usr/lib/kmitlnetauth/kmitlnetauth.dll "\$@"
+          WRAPPER
+          chmod 755 %{buildroot}/usr/bin/kmitlnetauth
 
           %files
           %attr(755,root,root) /usr/bin/kmitlnetauth
+          /usr/lib/kmitlnetauth/
           %attr(644,root,root) /etc/systemd/system/kmitlnetauth.service
 
           %post
@@ -147,7 +183,7 @@ jobs:
         with:
           name: linux-${{ matrix.arch }}
           path: |
-            publish/${{ matrix.rid }}/kmitlnetauth
+            publish/standalone/${{ matrix.rid }}/kmitlnetauth
             publish/deb/*.deb
             publish/rpm/*.rpm
 
@@ -166,42 +202,78 @@ jobs:
       - name: Restore
         run: dotnet restore
 
-      - name: Publish CLI (win-x64)
+      # Framework-dependent publish - both CLI and Tray go to the same output folder
+      # so they share common assemblies (KmitlNetAuth.Core.dll, Serilog, etc.)
+      - name: Publish CLI - framework-dependent (win-x64)
         run: >
           dotnet publish src/KmitlNetAuth.Cli/KmitlNetAuth.Cli.csproj
           -c Release
           -r win-x64
-          --self-contained true
-          -p:PublishSingleFile=true
+          --self-contained false
+          -p:PublishSingleFile=false
+          -p:PublishTrimmed=false
           -p:Version=${{ needs.version.outputs.version }}
-          -o ./publish/win-x64-cli
+          -o ./publish/win-x64
 
-      - name: Publish Tray (win-x64)
+      - name: Publish Tray - framework-dependent (win-x64)
         run: >
           dotnet publish src/KmitlNetAuth.Tray/KmitlNetAuth.Tray.csproj
           -c Release
           -r win-x64
-          --self-contained true
-          -p:PublishSingleFile=true
+          --self-contained false
+          -p:PublishSingleFile=false
           -p:Version=${{ needs.version.outputs.version }}
-          -o ./publish/win-x64-tray
+          -o ./publish/win-x64
 
       - name: Install WiX Toolset v5
         run: dotnet tool install --global wix --version 5.0.2
 
+      # Generate a WiX fragment that lists every file from the publish folder.
+      # Each file becomes its own Component (WiX best practice for per-file ref-counting).
+      - name: Generate WiX file fragment
+        shell: pwsh
+        run: |
+          $publishDir = "./publish/win-x64"
+          $files = Get-ChildItem -Path $publishDir -File
+          $xml = @"
+          <?xml version="1.0" encoding="UTF-8"?>
+          <Wix xmlns="http://wixtoolset.org/schemas/v4/wxs">
+            <Fragment>
+              <ComponentGroup Id="PublishComponents" Directory="INSTALLFOLDER">
+          "@
+
+          foreach ($file in $files) {
+            # Replace all non-alphanumeric/underscore chars (including dots) for safe WiX identifiers
+            $safeId = $file.Name -replace '[^a-zA-Z0-9_]', '_'
+            $xml += @"
+
+                <Component Id="Comp_$safeId" Guid="*">
+                  <File Id="File_$safeId" Source="!(bindpath.PublishDir)\$($file.Name)" KeyPath="yes" />
+                </Component>
+          "@
+          }
+
+          $xml += @"
+
+              </ComponentGroup>
+            </Fragment>
+          </Wix>
+          "@
+
+          $xml | Out-File -FilePath "./publish/Files.wxs" -Encoding UTF8
+          Write-Host "Generated Files.wxs with $($files.Count) files"
+          Get-Content "./publish/Files.wxs"
+
       - name: Build MSI
         run: >
-          wix build packaging/wix/Package.wxs
-          -bindpath CliPublish=./publish/win-x64-cli
-          -bindpath TrayPublish=./publish/win-x64-tray
+          wix build packaging/wix/Package.wxs ./publish/Files.wxs
+          -bindpath PublishDir=./publish/win-x64
           -o ./publish/kmitlnetauth-${{ needs.version.outputs.version }}.msi
 
       - uses: actions/upload-artifact@v7
         with:
           name: windows-x64
           path: |
-            publish/win-x64-cli/kmitlnetauth.exe
-            publish/win-x64-tray/kmitlnetauth-tray.exe
             publish/*.msi
 
   build-docker:
@@ -280,12 +352,12 @@ jobs:
         run: |
           mkdir -p release
 
-          # Linux amd64
+          # Linux amd64 - standalone binary for direct download
           find artifacts/linux-amd64 -name "kmitlnetauth" -type f -exec cp {} release/kmitlnetauth-${VERSION}-x86_64 \;
           find artifacts/linux-amd64 -name "*.deb" -exec cp {} release/ \;
           find artifacts/linux-amd64 -name "*.rpm" -exec cp {} release/ \;
 
-          # Linux arm64
+          # Linux arm64 - standalone binary for direct download
           find artifacts/linux-arm64 -name "kmitlnetauth" -type f -exec cp {} release/kmitlnetauth-${VERSION}-aarch64 \;
           find artifacts/linux-arm64 -name "*.deb" -exec cp {} release/ \;
           find artifacts/linux-arm64 -name "*.rpm" -exec cp {} release/ \;
@@ -318,6 +390,11 @@ jobs:
           | **Docker** | \`docker pull ghcr.io/${{ github.repository }}:${VERSION}\` ||
 
           > **Windows MSI** includes both the CLI service and system tray application.
+          > The MSI requires [.NET 10 Runtime](https://dotnet.microsoft.com/download/dotnet/10.0) to be installed.
+          >
+          > **Linux .deb/.rpm** packages require \`dotnet-runtime-10.0\` (installed automatically as a dependency).
+          >
+          > **Linux binary** is self-contained and requires no runtime.
           >
           > **Docker** image supports both amd64 and arm64 architectures.
 
@@ -327,6 +404,11 @@ jobs:
           # Debian/Ubuntu (x86_64)
           curl -LO ${REPO_URL}/releases/download/${TAG}/kmitlnetauth-${VERSION}-amd64.deb
           sudo dpkg -i kmitlnetauth-${VERSION}-amd64.deb
+
+          # Standalone binary (no runtime needed)
+          curl -LO ${REPO_URL}/releases/download/${TAG}/kmitlnetauth-${VERSION}-x86_64
+          chmod +x kmitlnetauth-${VERSION}-x86_64
+          ./kmitlnetauth-${VERSION}-x86_64 -d
 
           # Docker
           docker run -d -e KMITL_USERNAME=670xxxxx -e KMITL_PASSWORD=xxx ghcr.io/${{ github.repository }}:${VERSION}
