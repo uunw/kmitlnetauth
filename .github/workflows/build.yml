@@ -23,6 +23,7 @@ jobs:
       - uses: actions/setup-dotnet@v4
         with:
           dotnet-version: ${{ env.DOTNET_VERSION }}
+          cache: true
 
       - name: Set version
         run: |
@@ -45,22 +46,78 @@ jobs:
           -p:Version=${{ env.VERSION }}
           -o ./publish/linux-x64
 
-      - name: Copy packaging assets
-        run: |
-          cp packaging/systemd/kmitlnetauth.service ./publish/linux-x64/
-
-      - name: Install packaging tools
-        run: |
-          dotnet tool install --global dotnet-deb
-          dotnet tool install --global dotnet-rpm
-
       - name: Build .deb package
-        run: dotnet deb -c Release -r linux-x64 -o ../../publish/deb
-        working-directory: src/KmitlNetAuth.Cli
+        run: |
+          mkdir -p ./publish/deb/kmitlnetauth_${{ env.VERSION }}_amd64/DEBIAN
+          mkdir -p ./publish/deb/kmitlnetauth_${{ env.VERSION }}_amd64/usr/bin
+          mkdir -p ./publish/deb/kmitlnetauth_${{ env.VERSION }}_amd64/etc/systemd/system
+
+          cp ./publish/linux-x64/kmitlnetauth ./publish/deb/kmitlnetauth_${{ env.VERSION }}_amd64/usr/bin/
+          cp packaging/systemd/kmitlnetauth.service ./publish/deb/kmitlnetauth_${{ env.VERSION }}_amd64/etc/systemd/system/
+
+          cat > ./publish/deb/kmitlnetauth_${{ env.VERSION }}_amd64/DEBIAN/control << CTRL
+          Package: kmitlnetauth
+          Version: ${{ env.VERSION }}
+          Section: net
+          Priority: optional
+          Architecture: amd64
+          Maintainer: Nonthaphan Inthawong <67015067@kmitl.ac.th>
+          Description: Auto-authentication service for KMITL network
+          CTRL
+          # Remove leading spaces from heredoc
+          sed -i 's/^          //' ./publish/deb/kmitlnetauth_${{ env.VERSION }}_amd64/DEBIAN/control
+
+          cp packaging/debian/postinst ./publish/deb/kmitlnetauth_${{ env.VERSION }}_amd64/DEBIAN/
+          cp packaging/debian/prerm ./publish/deb/kmitlnetauth_${{ env.VERSION }}_amd64/DEBIAN/
+          chmod 755 ./publish/deb/kmitlnetauth_${{ env.VERSION }}_amd64/DEBIAN/postinst
+          chmod 755 ./publish/deb/kmitlnetauth_${{ env.VERSION }}_amd64/DEBIAN/prerm
+
+          dpkg-deb --build ./publish/deb/kmitlnetauth_${{ env.VERSION }}_amd64
+          mv ./publish/deb/kmitlnetauth_${{ env.VERSION }}_amd64.deb ./publish/deb/
 
       - name: Build .rpm package
-        run: dotnet rpm -c Release -r linux-x64 -o ../../publish/rpm
-        working-directory: src/KmitlNetAuth.Cli
+        run: |
+          sudo apt-get install -y rpm
+          mkdir -p rpmbuild/{SPECS,BUILD,RPMS,SOURCES}
+
+          cp ./publish/linux-x64/kmitlnetauth rpmbuild/SOURCES/
+          cp packaging/systemd/kmitlnetauth.service rpmbuild/SOURCES/
+
+          cat > rpmbuild/SPECS/kmitlnetauth.spec << 'SPEC'
+          Name: kmitlnetauth
+          Version: ${{ env.VERSION }}
+          Release: 1
+          Summary: Auto-authentication service for KMITL network
+          License: MIT
+          Group: Applications/Internet
+
+          %description
+          A secure, cross-platform auto-authentication service for the KMITL network.
+
+          %install
+          mkdir -p %{buildroot}/usr/bin
+          mkdir -p %{buildroot}/etc/systemd/system
+          cp %{_sourcedir}/kmitlnetauth %{buildroot}/usr/bin/
+          cp %{_sourcedir}/kmitlnetauth.service %{buildroot}/etc/systemd/system/
+
+          %files
+          %attr(755,root,root) /usr/bin/kmitlnetauth
+          %attr(644,root,root) /etc/systemd/system/kmitlnetauth.service
+
+          %post
+          systemctl daemon-reload
+          systemctl enable kmitlnetauth.service
+          systemctl start kmitlnetauth.service || true
+
+          %preun
+          systemctl stop kmitlnetauth.service || true
+          systemctl disable kmitlnetauth.service || true
+          SPEC
+          sed -i 's/^          //' rpmbuild/SPECS/kmitlnetauth.spec
+
+          rpmbuild --define "_topdir $(pwd)/rpmbuild" -bb rpmbuild/SPECS/kmitlnetauth.spec
+          mkdir -p ./publish/rpm
+          cp rpmbuild/RPMS/x86_64/*.rpm ./publish/rpm/ || cp rpmbuild/RPMS/noarch/*.rpm ./publish/rpm/ || true
 
       - uses: actions/upload-artifact@v4
         with:
@@ -87,6 +144,7 @@ jobs:
       - uses: actions/setup-dotnet@v4
         with:
           dotnet-version: ${{ env.DOTNET_VERSION }}
+          cache: true
 
       - name: Set version
         shell: bash

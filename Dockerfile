@@ -14,9 +14,8 @@ RUN dotnet publish src/KmitlNetAuth.Cli/KmitlNetAuth.Cli.csproj \
     -c Release \
     -r linux-musl-x64 \
     --self-contained true \
-    /p:PublishSingleFile=true \
-    /p:PublishTrimmed=true \
-    /p:Version=${VERSION} \
+    -p:PublishSingleFile=true \
+    -p:Version=${VERSION} \
     -o /app/publish
 
 FROM mcr.microsoft.com/dotnet/runtime-deps:10.0-alpine

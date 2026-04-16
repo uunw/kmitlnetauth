@@ -64,7 +64,7 @@
     <!-- Launch after install -->
     <CustomAction Id="LaunchTray" FileRef="KmitlNetAuthTray" ExeCommand="" Return="asyncNoWait" />
     <InstallExecuteSequence>
-      <Custom Action="LaunchTray" After="InstallFinalize">NOT Installed AND NOT REMOVE</Custom>
+      <Custom Action="LaunchTray" After="InstallFinalize" Condition="NOT Installed AND NOT REMOVE" />
     </InstallExecuteSequence>
 
   </Package>
