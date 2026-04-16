@@ -19,27 +19,16 @@ internal static class Program
         var configPath = ConfigPaths.Resolve();
         var config = Config.Load(configPath);
 
-        // If no username, open config for editing
+        // If no username, show settings form for first-time setup
         if (string.IsNullOrEmpty(config.Username))
         {
             var dir = Path.GetDirectoryName(configPath);
             if (!string.IsNullOrEmpty(dir))
                 Directory.CreateDirectory(dir);
 
-            config.Save(configPath);
-
-            try
-            {
-                System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
-                {
-                    FileName = configPath,
-                    UseShellExecute = true,
-                });
-            }
-            catch
-            {
-                // Ignore - user can edit manually
-            }
+            using var setupForm = new SettingsForm(config, configPath, credentialStore: null);
+            if (setupForm.ShowDialog() != DialogResult.OK)
+                return; // User cancelled first-time setup
         }
 
         var logDir = ConfigPaths.GetLogDirectory();
@@ -47,6 +36,7 @@ internal static class Program
 
         Log.Logger = new LoggerConfiguration()
             .MinimumLevel.Information()
+            .WriteTo.Console()
             .WriteTo.File(
                 Path.Combine(logDir, "tray-.log"),
                 rollingInterval: RollingInterval.Day,

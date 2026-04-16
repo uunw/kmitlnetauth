@@ -90,6 +90,12 @@ jobs:
 
           dpkg-deb --build ./publish/deb/${PKG}
 
+          # Rename deb to use consistent - separator
+          for f in ./publish/deb/*.deb; do
+            newname=$(echo "$f" | sed 's/_/-/g')
+            [ "$f" != "$newname" ] && mv "$f" "$newname"
+          done
+
       - name: Build .rpm package
         run: |
           sudo apt-get install -y rpm
@@ -306,7 +312,7 @@ jobs:
           | Platform | x86-64 (64-bit) | AArch64 (ARM64) |
           |---|---|---|
           | **Windows** | [MSI Installer](${REPO_URL}/releases/download/${TAG}/kmitlnetauth-${VERSION}.msi) | - |
-          | **Debian / Ubuntu** | [.deb](${REPO_URL}/releases/download/${TAG}/kmitlnetauth_${VERSION}_amd64.deb) | [.deb](${REPO_URL}/releases/download/${TAG}/kmitlnetauth_${VERSION}_arm64.deb) |
+          | **Debian / Ubuntu** | [.deb](${REPO_URL}/releases/download/${TAG}/kmitlnetauth-${VERSION}-amd64.deb) | [.deb](${REPO_URL}/releases/download/${TAG}/kmitlnetauth-${VERSION}-arm64.deb) |
           | **RHEL / Fedora** | [.rpm](${REPO_URL}/releases/download/${TAG}/kmitlnetauth-${VERSION}-1.x86_64.rpm) | [.rpm](${REPO_URL}/releases/download/${TAG}/kmitlnetauth-${VERSION}-1.aarch64.rpm) |
           | **Linux (binary)** | [Download](${REPO_URL}/releases/download/${TAG}/kmitlnetauth-${VERSION}-x86_64) | [Download](${REPO_URL}/releases/download/${TAG}/kmitlnetauth-${VERSION}-aarch64) |
           | **Docker** | \`docker pull ghcr.io/${{ github.repository }}:${VERSION}\` ||
@@ -319,8 +325,8 @@ jobs:
 
           \`\`\`bash
           # Debian/Ubuntu (x86_64)
-          curl -LO ${REPO_URL}/releases/download/${TAG}/kmitlnetauth_${VERSION}_amd64.deb
-          sudo dpkg -i kmitlnetauth_${VERSION}_amd64.deb
+          curl -LO ${REPO_URL}/releases/download/${TAG}/kmitlnetauth-${VERSION}-amd64.deb
+          sudo dpkg -i kmitlnetauth-${VERSION}-amd64.deb
 
           # Docker
           docker run -d -e KMITL_USERNAME=670xxxxx -e KMITL_PASSWORD=xxx ghcr.io/${{ github.repository }}:${VERSION}

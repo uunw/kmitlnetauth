@@ -1,4 +1,3 @@
-using System.Diagnostics;
 using System.Runtime.Versioning;
 using KmitlNetAuth.Core;
 using KmitlNetAuth.Core.Platform;
@@ -18,9 +17,11 @@ public sealed class TrayApplicationContext : ApplicationContext
     private readonly IAutoStartManager _autoStartManager;
     private readonly IAuthService _authService;
     private readonly ILogger<TrayApplicationContext> _logger;
+    private readonly UpdateChecker _updateChecker;
 
     private readonly ToolStripMenuItem _autoLoginItem;
     private readonly ToolStripMenuItem _autoStartItem;
+    private readonly ToolStripMenuItem _showConsoleItem;
     private readonly ToolStripMenuItem[] _logLevelItems;
 
     public TrayApplicationContext(IServiceProvider services, string configPath)
@@ -48,6 +49,18 @@ public sealed class TrayApplicationContext : ApplicationContext
         };
         _autoStartItem.CheckedChanged += OnAutoStartChanged;
 
+        // Settings
+        var settingsItem = new ToolStripMenuItem("Settings");
+        settingsItem.Click += OnSettingsClicked;
+
+        // Show Console toggle
+        _showConsoleItem = new ToolStripMenuItem("Show Console")
+        {
+            CheckOnClick = true,
+            Checked = false,
+        };
+        _showConsoleItem.CheckedChanged += OnShowConsoleChanged;
+
         // Log Level submenu
         var logLevels = new[] { "Error", "Warning", "Information", "Debug", "Verbose" };
         _logLevelItems = logLevels.Select(level =>
@@ -64,9 +77,9 @@ public sealed class TrayApplicationContext : ApplicationContext
         var logLevelMenu = new ToolStripMenuItem("Log Level");
         logLevelMenu.DropDownItems.AddRange(_logLevelItems);
 
-        // Settings
-        var settingsItem = new ToolStripMenuItem("Settings (Config File)");
-        settingsItem.Click += OnSettingsClicked;
+        // Check for Updates
+        var updateItem = new ToolStripMenuItem("Check for Updates");
+        updateItem.Click += OnCheckForUpdatesClicked;
 
         // Quit
         var quitItem = new ToolStripMenuItem("Quit");
@@ -78,8 +91,10 @@ public sealed class TrayApplicationContext : ApplicationContext
         contextMenu.Items.Add(_autoStartItem);
         contextMenu.Items.Add(new ToolStripSeparator());
         contextMenu.Items.Add(settingsItem);
+        contextMenu.Items.Add(_showConsoleItem);
         contextMenu.Items.Add(logLevelMenu);
         contextMenu.Items.Add(new ToolStripSeparator());
+        contextMenu.Items.Add(updateItem);
         contextMenu.Items.Add(quitItem);
 
         // Tray icon
@@ -93,6 +108,10 @@ public sealed class TrayApplicationContext : ApplicationContext
 
         // Subscribe to status changes for balloon tips
         _authService.StatusChanged += OnStatusChanged;
+
+        // Auto-update checker (fire-and-forget on startup)
+        _updateChecker = new UpdateChecker(_notifyIcon, _logger);
+        _ = _updateChecker.StartAsync();
     }
 
     private void OnStatusChanged(object? sender, AuthStatusChangedEventArgs e)
@@ -148,23 +167,27 @@ public sealed class TrayApplicationContext : ApplicationContext
 
     private void OnSettingsClicked(object? sender, EventArgs e)
     {
-        if (!File.Exists(_configPath))
-        {
-            _config.Save(_configPath, _credentialStore);
-        }
+        using var form = new SettingsForm(_config, _configPath, _credentialStore);
+        form.ShowDialog();
+    }
 
-        try
+    private void OnShowConsoleChanged(object? sender, EventArgs e)
+    {
+        if (_showConsoleItem.Checked)
         {
-            Process.Start(new ProcessStartInfo
-            {
-                FileName = _configPath,
-                UseShellExecute = true,
-            });
+            NativeConsole.Show();
+            _logger.LogInformation("Console window shown");
         }
-        catch (Exception ex)
+        else
         {
-            _logger.LogWarning("Could not open config file: {Error}", ex.Message);
+            NativeConsole.Hide();
+            _logger.LogInformation("Console window hidden");
         }
+    }
+
+    private async void OnCheckForUpdatesClicked(object? sender, EventArgs e)
+    {
+        await _updateChecker.CheckManualAsync();
     }
 
     private void OnQuitClicked(object? sender, EventArgs e)
@@ -190,6 +213,7 @@ public sealed class TrayApplicationContext : ApplicationContext
     {
         if (disposing)
         {
+            _updateChecker.Dispose();
             _notifyIcon.Visible = false;
             _notifyIcon.Dispose();
         }
