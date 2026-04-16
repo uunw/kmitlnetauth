@@ -227,19 +227,23 @@ Log files are also written to `~/.local/share/kmitlnetauth/logs/` with daily rot
 
 ## Windows
 
+> **Requires Windows 10 version 1809 or later.**
+
 ### Windows - MSI Installer
 
 1. Download the latest `.msi` from [GitHub Releases](https://github.com/uunw/kmitlnetauth/releases/latest)
 2. Run the installer - it will install both the CLI and the system tray app to `C:\Program Files\KMITL NetAuth\`
 3. The tray app launches automatically after installation
-4. Right-click the tray icon to:
-   - Toggle **Auto Login**
-   - Toggle **Auto Start** (runs on Windows startup)
+4. On first launch, a **Settings window** appears to configure your credentials
+5. Right-click the tray icon to:
+   - Toggle **Auto Login** / **Auto Start**
+   - Open **Settings** (Fluent UI settings window)
+   - **Show Console** (live log viewer)
    - Change **Log Level**
-   - Open **Settings** (config file)
+   - **Check for Updates** (auto-downloads and installs MSI)
    - **Quit**
 
-If no username is configured, the config file opens automatically in your default text editor on first launch.
+The tray app automatically checks for updates on startup and every 24 hours.
 
 ### Windows - Manual / Portable
 

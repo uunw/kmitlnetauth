@@ -17,5 +17,6 @@
     <RepositoryUrl>https://github.com/uunw/kmitlnetauth</RepositoryUrl>
     <EnableWindowsTargeting>true</EnableWindowsTargeting>
     <RestorePackagesWithLockFile>true</RestorePackagesWithLockFile>
+    <EnableCompressionInSingleFile>true</EnableCompressionInSingleFile>
   </PropertyGroup>
 </Project>

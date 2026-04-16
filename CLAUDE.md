@@ -26,7 +26,7 @@ dotnet run --project src/KmitlNetAuth.Tray
 |---|---|---|
 | `KmitlNetAuth.Core` | `net10.0` | Shared library: auth client, config, platform abstractions, DI |
 | `KmitlNetAuth.Cli` | `net10.0` | CLI app with System.CommandLine, Serilog, daemon/systemd/Windows Service |
-| `KmitlNetAuth.Tray` | `net10.0-windows` | WinForms NotifyIcon tray app (Windows only) |
+| `KmitlNetAuth.Tray` | `net10.0-windows10.0.17763.0` | WPF + wpfui tray app (Windows 10+ only) |
 
 ## Key Files
 
@@ -36,8 +36,10 @@ dotnet run --project src/KmitlNetAuth.Tray
 | `src/KmitlNetAuth.Core/Config.cs` | YAML config loading, env var overrides, password migration |
 | `src/KmitlNetAuth.Core/Services/AuthService.cs` | Main run loop (state machine) |
 | `src/KmitlNetAuth.Core/DependencyInjection/CoreServiceCollectionExtensions.cs` | DI wiring, platform detection |
-| `src/KmitlNetAuth.Cli/Program.cs` | CLI entry point (System.CommandLine 2.0.0-beta5+) |
-| `src/KmitlNetAuth.Tray/TrayApplicationContext.cs` | Tray menu: auto-login, auto-start, log level |
+| `src/KmitlNetAuth.Cli/Program.cs` | CLI entry point (System.CommandLine) |
+| `src/KmitlNetAuth.Tray/App.xaml.cs` | WPF app entry, host setup, tray icon |
+| `src/KmitlNetAuth.Tray/SettingsWindow.xaml` | Fluent UI settings form |
+| `src/KmitlNetAuth.Tray/UpdateChecker.cs` | Auto-update: check GitHub releases, download MSI, install |
 
 ## Important Conventions
 
@@ -120,3 +122,5 @@ Heartbeat form fields: `username`, `os=Chrome v116.0.5845.141 on Windows 10 64-b
 - Don't add `#if WINDOWS` / `#if LINUX` to Core - use DI
 - Don't reference KmitlNetAuth.Cli from KmitlNetAuth.Tray (they are independent)
 - Don't add NuGet package versions in `.csproj` files (use `Directory.Packages.props`)
+- Don't use WinForms in Tray project (it's WPF + wpfui now)
+- Tray app requires Windows 10 version 1809+ (net10.0-windows10.0.17763.0)

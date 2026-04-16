@@ -32,7 +32,7 @@ public class FileCredentialStore : ICredentialStore
         if (!string.IsNullOrEmpty(dir))
             Directory.CreateDirectory(dir);
 
-        var json = JsonSerializer.Serialize(existing);
+        var json = JsonSerializer.Serialize(existing, CredentialJsonContext.Default.DictionaryStringCredentialPayload);
         File.WriteAllText(path, json);
 
         if (!OperatingSystem.IsWindows())
@@ -64,7 +64,7 @@ public class FileCredentialStore : ICredentialStore
         if (existing.Remove(username))
         {
             var path = ConfigPaths.GetCredentialPath();
-            var json = JsonSerializer.Serialize(existing);
+            var json = JsonSerializer.Serialize(existing, CredentialJsonContext.Default.DictionaryStringCredentialPayload);
             File.WriteAllText(path, json);
         }
 
@@ -97,13 +97,8 @@ public class FileCredentialStore : ICredentialStore
             return new Dictionary<string, CredentialPayload>();
 
         var json = File.ReadAllText(path);
-        return JsonSerializer.Deserialize<Dictionary<string, CredentialPayload>>(json)
+        return JsonSerializer.Deserialize(json, CredentialJsonContext.Default.DictionaryStringCredentialPayload)
             ?? new Dictionary<string, CredentialPayload>();
     }
 
-    private sealed class CredentialPayload
-    {
-        public string Iv { get; set; } = "";
-        public string Data { get; set; } = "";
-    }
 }

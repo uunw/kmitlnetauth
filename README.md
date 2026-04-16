@@ -6,8 +6,8 @@ A secure, cross-platform auto-authentication service for the KMITL network. Buil
 
 - **Auto-Reconnect** - Monitors connection and re-authenticates automatically
 - **Secure Credentials** - Passwords stored via Windows DPAPI or encrypted file (Linux), never in plain text
-- **Cross-Platform** - Windows (MSI + system tray), Linux (DEB/RPM + systemd), Docker
-- **System Tray** - Windows tray app with auto-login toggle, auto-start, and log level control
+- **Cross-Platform** - Windows 10+ (MSI + system tray), Linux (DEB/RPM + systemd), Docker
+- **System Tray** - Windows tray app with Fluent UI (WPF), auto-login, auto-start, settings, auto-update
 - **CLI** - Interactive setup wizard, status display, daemon mode (`-d`)
 - **Notifications** - Desktop notifications on connection state changes
 - **Log Rotation** - Daily rotating log files
@@ -34,14 +34,14 @@ kmitlnetauth status
 KmitlNetAuth.sln
 ├── KmitlNetAuth.Core     # Shared library: auth, config, platform abstractions
 ├── KmitlNetAuth.Cli      # CLI application with daemon mode
-└── KmitlNetAuth.Tray     # Windows system tray app (WinForms)
+└── KmitlNetAuth.Tray     # Windows 10+ system tray app (WPF + wpfui)
 ```
 
 | Component | Description |
 |---|---|
 | **Core** | Auth client (login, heartbeat, internet check), YAML config with env var overrides, credential storage, notifications, auto-start |
 | **CLI** | `System.CommandLine` with subcommands (setup, status, config), `Serilog` logging, `Microsoft.Extensions.Hosting` for daemon/systemd/Windows Service |
-| **Tray** | WinForms `NotifyIcon` with context menu, hosts auth worker in background |
+| **Tray** | WPF with Fluent UI (wpfui), system tray, settings window, auto-update with download, console log viewer |
 
 ## Quick Login (Headless Linux)
 

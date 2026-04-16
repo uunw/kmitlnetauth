@@ -47,9 +47,11 @@ src/
     SetupWizard.cs          # Spectre.Console interactive prompts
     AuthWorker.cs           # BackgroundService wrapper
 
-  KmitlNetAuth.Tray/       # Windows-only tray app (net10.0-windows)
-    TrayApplicationContext.cs  # NotifyIcon + context menu
-    Program.cs                 # WinForms entry point
+  KmitlNetAuth.Tray/       # Windows 10+ tray app (WPF + wpfui)
+    App.xaml(.cs)              # WPF entry, host setup, tray icon
+    SettingsWindow.xaml(.cs)   # Fluent UI settings form
+    UpdateChecker.cs           # Auto-update: GitHub releases + MSI download
+    NativeConsole.cs           # P/Invoke console toggle
 
 packaging/                  # systemd, debian scripts, WiX MSI
 docs/                       # Installation and usage guides
@@ -173,7 +175,7 @@ Start -> Check auto_login
 
 ### Notification Flow
 
-- **Windows Tray:** `NotifyIcon.ShowBalloonTip` (handled by `TrayApplicationContext`)
+- **Windows Tray:** WPF wpfui tray icon + Fluent UI windows (requires Windows 10+)
 - **Windows CLI:** Logged only (no UI)
 - **Linux:** `notify-send` via `Process.Start` (fails silently if not available)
 

@@ -1,36 +1,41 @@
+using System.Diagnostics;
+using System.IO;
+using System.Net.Http;
 using System.Reflection;
 using System.Runtime.Versioning;
 using System.Text.Json;
+using WpfApplication = System.Windows.Application;
 using Microsoft.Extensions.Logging;
 
 namespace KmitlNetAuth.Tray;
 
-[SupportedOSPlatform("windows")]
-internal sealed class UpdateChecker : IDisposable
+[SupportedOSPlatform("windows10.0.17763.0")]
+public sealed class UpdateChecker : IDisposable
 {
     private const string GitHubApiUrl = "https://api.github.com/repos/uunw/kmitlnetauth/releases/latest";
     private static readonly TimeSpan CheckInterval = TimeSpan.FromHours(24);
 
-    private readonly NotifyIcon _notifyIcon;
     private readonly ILogger _logger;
     private readonly HttpClient _httpClient;
-    private readonly System.Windows.Forms.Timer _timer;
-    private string? _releaseUrl;
+    private readonly System.Timers.Timer _timer;
 
-    public UpdateChecker(NotifyIcon notifyIcon, ILogger logger)
+    public UpdateChecker(ILogger logger)
     {
-        _notifyIcon = notifyIcon;
         _logger = logger;
 
         _httpClient = new HttpClient();
         _httpClient.DefaultRequestHeaders.Add("User-Agent", "kmitlnetauth-tray");
         _httpClient.DefaultRequestHeaders.Add("Accept", "application/vnd.github.v3+json");
 
-        _timer = new System.Windows.Forms.Timer
+        _timer = new System.Timers.Timer(CheckInterval.TotalMilliseconds);
+        _timer.Elapsed += async (_, _) =>
         {
-            Interval = (int)CheckInterval.TotalMilliseconds,
+            var (hasUpdate, _, remoteVersion, msiUrl) = await CheckAsync();
+            if (hasUpdate)
+            {
+                _logger.LogInformation("Update available: {Version}", remoteVersion);
+            }
         };
-        _timer.Tick += async (_, _) => await CheckAsync();
     }
 
     /// <summary>
@@ -38,37 +43,25 @@ internal sealed class UpdateChecker : IDisposable
     /// </summary>
     public async Task StartAsync()
     {
-        // Initial check shortly after startup
         await CheckAsync();
         _timer.Start();
     }
 
     /// <summary>
-    /// Manually trigger an update check. Shows a balloon even if up-to-date.
+    /// Checks for updates. Returns structured result instead of showing UI.
     /// </summary>
-    public async Task CheckManualAsync()
+    /// <returns>Tuple of (hasUpdate, currentVersion, remoteVersion, msiDownloadUrl).</returns>
+    public async Task<(bool HasUpdate, string CurrentVersion, string? RemoteVersion, string? MsiUrl)> CheckAsync()
     {
-        var hasUpdate = await CheckAsync();
-        if (!hasUpdate)
-        {
-            _notifyIcon.ShowBalloonTip(
-                3000,
-                "KMITL NetAuth",
-                "You are running the latest version.",
-                ToolTipIcon.Info);
-        }
-    }
+        var currentVersion = GetCurrentVersion();
 
-    /// <returns>True if a newer version was found.</returns>
-    private async Task<bool> CheckAsync()
-    {
         try
         {
             var response = await _httpClient.GetAsync(GitHubApiUrl);
             if (!response.IsSuccessStatusCode)
             {
                 _logger.LogDebug("Update check HTTP {StatusCode}", response.StatusCode);
-                return false;
+                return (false, currentVersion, null, null);
             }
 
             var json = await response.Content.ReadAsStringAsync();
@@ -76,61 +69,90 @@ internal sealed class UpdateChecker : IDisposable
             var root = doc.RootElement;
 
             if (!root.TryGetProperty("tag_name", out var tagElement))
-                return false;
+                return (false, currentVersion, null, null);
 
             var tagName = tagElement.GetString();
             if (string.IsNullOrEmpty(tagName))
-                return false;
+                return (false, currentVersion, null, null);
 
-            // tag_name is typically "v20260416.1" or "20260416.1"
             var remoteVersion = tagName.TrimStart('v');
-            var currentVersion = GetCurrentVersion();
 
             _logger.LogDebug("Update check: current={Current}, remote={Remote}", currentVersion, remoteVersion);
 
             if (!IsNewer(currentVersion, remoteVersion))
-                return false;
+                return (false, currentVersion, remoteVersion, null);
 
-            // Extract release URL for the balloon click handler
-            _releaseUrl = root.TryGetProperty("html_url", out var urlElement)
-                ? urlElement.GetString()
-                : $"https://github.com/uunw/kmitlnetauth/releases/tag/{tagName}";
+            // Find MSI asset URL from release assets
+            string? msiUrl = null;
+            if (root.TryGetProperty("assets", out var assets) && assets.ValueKind == JsonValueKind.Array)
+            {
+                foreach (var asset in assets.EnumerateArray())
+                {
+                    var name = asset.TryGetProperty("name", out var nameEl)
+                        ? nameEl.GetString() : null;
+                    if (name != null && name.EndsWith(".msi", StringComparison.OrdinalIgnoreCase))
+                    {
+                        msiUrl = asset.TryGetProperty("browser_download_url", out var urlEl)
+                            ? urlEl.GetString() : null;
+                        break;
+                    }
+                }
+            }
 
-            _notifyIcon.BalloonTipClicked -= OnBalloonClicked;
-            _notifyIcon.BalloonTipClicked += OnBalloonClicked;
-
-            _notifyIcon.ShowBalloonTip(
-                5000,
-                "KMITL NetAuth - Update Available",
-                $"Version {remoteVersion} is available. Click to download.",
-                ToolTipIcon.Info);
-
-            _logger.LogInformation("Update available: {Version}", remoteVersion);
-            return true;
+            _logger.LogInformation("Update available: {Version} (MSI: {HasMsi})", remoteVersion, msiUrl != null);
+            return (true, currentVersion, remoteVersion, msiUrl);
         }
         catch (Exception ex)
         {
             _logger.LogDebug("Update check failed: {Error}", ex.Message);
-            return false;
+            return (false, currentVersion, null, null);
         }
     }
 
-    private void OnBalloonClicked(object? sender, EventArgs e)
+    /// <summary>
+    /// Downloads the MSI installer and launches it, then shuts down the application.
+    /// </summary>
+    public async Task DownloadAndInstallAsync(string msiUrl, IProgress<double> progress)
     {
-        if (string.IsNullOrEmpty(_releaseUrl))
-            return;
-
         try
         {
-            System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
+            var tempDir = Path.GetTempPath();
+            var msiPath = Path.Combine(tempDir, "kmitlnetauth-update.msi");
+
+            _logger.LogInformation("Downloading update from {Url}", msiUrl);
+
+            using var response = await _httpClient.GetAsync(msiUrl, HttpCompletionOption.ResponseHeadersRead);
+            response.EnsureSuccessStatusCode();
+
+            var totalBytes = response.Content.Headers.ContentLength ?? -1;
+            var bytesRead = 0L;
+
+            await using var contentStream = await response.Content.ReadAsStreamAsync();
+            await using var fileStream = new FileStream(msiPath, FileMode.Create, FileAccess.Write, FileShare.None);
+
+            var buffer = new byte[81920];
+            int read;
+            while ((read = await contentStream.ReadAsync(buffer)) > 0)
             {
-                FileName = _releaseUrl,
-                UseShellExecute = true,
-            });
+                await fileStream.WriteAsync(buffer.AsMemory(0, read));
+                bytesRead += read;
+
+                if (totalBytes > 0)
+                {
+                    var percent = (double)bytesRead / totalBytes * 100;
+                    progress.Report(percent);
+                }
+            }
+
+            progress.Report(100);
+            _logger.LogInformation("Download complete, launching installer");
+
+            Process.Start("msiexec", $"/i \"{msiPath}\" /passive");
+            WpfApplication.Current.Shutdown();
         }
         catch (Exception ex)
         {
-            _logger.LogWarning("Could not open release URL: {Error}", ex.Message);
+            _logger.LogError(ex, "Failed to download or install update");
         }
     }
 
@@ -160,7 +182,6 @@ internal sealed class UpdateChecker : IDisposable
     /// </summary>
     private static bool IsNewer(string current, string remote)
     {
-        // Try parsing as Version (major.minor or major.minor.build.rev)
         if (Version.TryParse(NormalizeVersion(current), out var currentVer) &&
             Version.TryParse(NormalizeVersion(remote), out var remoteVer))
         {

@@ -1,40 +1,48 @@
+using System.ComponentModel;
+using System.Drawing;
 using System.Runtime.Versioning;
+using System.Windows;
 using KmitlNetAuth.Core;
 using KmitlNetAuth.Core.Platform;
 using KmitlNetAuth.Core.Services;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using Wpf.Ui.Controls;
+using WinForms = System.Windows.Forms;
 
 namespace KmitlNetAuth.Tray;
 
-[SupportedOSPlatform("windows")]
-public sealed class TrayApplicationContext : ApplicationContext
+[SupportedOSPlatform("windows10.0.17763.0")]
+public partial class MainWindow : FluentWindow
 {
-    private readonly NotifyIcon _notifyIcon;
     private readonly Config _config;
     private readonly string _configPath;
     private readonly ICredentialStore? _credentialStore;
     private readonly IAutoStartManager _autoStartManager;
     private readonly IAuthService _authService;
-    private readonly ILogger<TrayApplicationContext> _logger;
+    private readonly ILogger<MainWindow> _logger;
     private readonly UpdateChecker _updateChecker;
 
-    private readonly ToolStripMenuItem _autoLoginItem;
-    private readonly ToolStripMenuItem _autoStartItem;
-    private readonly ToolStripMenuItem _showConsoleItem;
-    private readonly ToolStripMenuItem[] _logLevelItems;
+    private readonly WinForms.NotifyIcon _notifyIcon;
+    private readonly WinForms.ToolStripMenuItem _autoLoginItem;
+    private readonly WinForms.ToolStripMenuItem _autoStartItem;
+    private readonly WinForms.ToolStripMenuItem _showConsoleItem;
+    private readonly WinForms.ToolStripMenuItem[] _logLevelItems;
 
-    public TrayApplicationContext(IServiceProvider services, string configPath)
+    public MainWindow(IServiceProvider services, string configPath)
     {
+        InitializeComponent();
+
         _config = services.GetRequiredService<Config>();
         _configPath = configPath;
         _credentialStore = services.GetService<ICredentialStore>();
         _autoStartManager = services.GetRequiredService<IAutoStartManager>();
         _authService = services.GetRequiredService<IAuthService>();
-        _logger = services.GetRequiredService<ILogger<TrayApplicationContext>>();
+        _logger = services.GetRequiredService<ILogger<MainWindow>>();
+        _updateChecker = new UpdateChecker(_logger);
 
         // Auto Login toggle
-        _autoLoginItem = new ToolStripMenuItem("Auto Login")
+        _autoLoginItem = new WinForms.ToolStripMenuItem("Auto Login")
         {
             CheckOnClick = true,
             Checked = _config.AutoLogin,
@@ -42,7 +50,7 @@ public sealed class TrayApplicationContext : ApplicationContext
         _autoLoginItem.CheckedChanged += OnAutoLoginChanged;
 
         // Auto Start toggle
-        _autoStartItem = new ToolStripMenuItem("Auto Start")
+        _autoStartItem = new WinForms.ToolStripMenuItem("Auto Start")
         {
             CheckOnClick = true,
             Checked = _autoStartManager.IsEnabled,
@@ -50,11 +58,11 @@ public sealed class TrayApplicationContext : ApplicationContext
         _autoStartItem.CheckedChanged += OnAutoStartChanged;
 
         // Settings
-        var settingsItem = new ToolStripMenuItem("Settings");
+        var settingsItem = new WinForms.ToolStripMenuItem("Settings");
         settingsItem.Click += OnSettingsClicked;
 
         // Show Console toggle
-        _showConsoleItem = new ToolStripMenuItem("Show Console")
+        _showConsoleItem = new WinForms.ToolStripMenuItem("Show Console")
         {
             CheckOnClick = true,
             Checked = false,
@@ -65,7 +73,7 @@ public sealed class TrayApplicationContext : ApplicationContext
         var logLevels = new[] { "Error", "Warning", "Information", "Debug", "Verbose" };
         _logLevelItems = logLevels.Select(level =>
         {
-            var item = new ToolStripMenuItem(level)
+            var item = new WinForms.ToolStripMenuItem(level)
             {
                 Tag = level,
                 Checked = string.Equals(_config.LogLevel, level, StringComparison.OrdinalIgnoreCase),
@@ -74,31 +82,31 @@ public sealed class TrayApplicationContext : ApplicationContext
             return item;
         }).ToArray();
 
-        var logLevelMenu = new ToolStripMenuItem("Log Level");
+        var logLevelMenu = new WinForms.ToolStripMenuItem("Log Level");
         logLevelMenu.DropDownItems.AddRange(_logLevelItems);
 
         // Check for Updates
-        var updateItem = new ToolStripMenuItem("Check for Updates");
+        var updateItem = new WinForms.ToolStripMenuItem("Check for Updates");
         updateItem.Click += OnCheckForUpdatesClicked;
 
         // Quit
-        var quitItem = new ToolStripMenuItem("Quit");
+        var quitItem = new WinForms.ToolStripMenuItem("Quit");
         quitItem.Click += OnQuitClicked;
 
         // Context menu
-        var contextMenu = new ContextMenuStrip();
+        var contextMenu = new WinForms.ContextMenuStrip();
         contextMenu.Items.Add(_autoLoginItem);
         contextMenu.Items.Add(_autoStartItem);
-        contextMenu.Items.Add(new ToolStripSeparator());
+        contextMenu.Items.Add(new WinForms.ToolStripSeparator());
         contextMenu.Items.Add(settingsItem);
         contextMenu.Items.Add(_showConsoleItem);
         contextMenu.Items.Add(logLevelMenu);
-        contextMenu.Items.Add(new ToolStripSeparator());
+        contextMenu.Items.Add(new WinForms.ToolStripSeparator());
         contextMenu.Items.Add(updateItem);
         contextMenu.Items.Add(quitItem);
 
-        // Tray icon
-        _notifyIcon = new NotifyIcon
+        // Tray icon using System.Windows.Forms.NotifyIcon
+        _notifyIcon = new WinForms.NotifyIcon
         {
             Icon = SystemIcons.Application,
             Text = "KMITL NetAuth",
@@ -109,8 +117,7 @@ public sealed class TrayApplicationContext : ApplicationContext
         // Subscribe to status changes for balloon tips
         _authService.StatusChanged += OnStatusChanged;
 
-        // Auto-update checker (fire-and-forget on startup)
-        _updateChecker = new UpdateChecker(_notifyIcon, _logger);
+        // Auto-update check on startup (fire-and-forget)
         _ = _updateChecker.StartAsync();
     }
 
@@ -126,7 +133,11 @@ public sealed class TrayApplicationContext : ApplicationContext
 
         if (title != null && body != null)
         {
-            _notifyIcon.ShowBalloonTip(3000, $"KMITL NetAuth - {title}", body, ToolTipIcon.Info);
+            _notifyIcon.ShowBalloonTip(
+                3000,
+                $"KMITL NetAuth - {title}",
+                body,
+                WinForms.ToolTipIcon.Info);
         }
     }
 
@@ -141,7 +152,8 @@ public sealed class TrayApplicationContext : ApplicationContext
     {
         if (_autoStartItem.Checked)
         {
-            var exePath = Environment.ProcessPath ?? Application.ExecutablePath;
+            var exePath = Environment.ProcessPath
+                ?? System.Reflection.Assembly.GetExecutingAssembly().Location;
             _autoStartManager.Enable(exePath);
         }
         else
@@ -152,23 +164,13 @@ public sealed class TrayApplicationContext : ApplicationContext
         _logger.LogInformation("Auto start {State}", _autoStartItem.Checked ? "enabled" : "disabled");
     }
 
-    private void OnLogLevelChanged(object? sender, EventArgs e)
-    {
-        if (sender is not ToolStripMenuItem clicked)
-            return;
-
-        foreach (var item in _logLevelItems)
-            item.Checked = item == clicked;
-
-        _config.LogLevel = (string)clicked.Tag!;
-        SaveConfig();
-        _logger.LogInformation("Log level changed to {Level}", _config.LogLevel);
-    }
-
     private void OnSettingsClicked(object? sender, EventArgs e)
     {
-        using var form = new SettingsForm(_config, _configPath, _credentialStore);
-        form.ShowDialog();
+        Dispatcher.Invoke(() =>
+        {
+            var settingsWindow = new SettingsWindow(_config, _configPath, _credentialStore);
+            settingsWindow.ShowDialog();
+        });
     }
 
     private void OnShowConsoleChanged(object? sender, EventArgs e)
@@ -185,16 +187,54 @@ public sealed class TrayApplicationContext : ApplicationContext
         }
     }
 
+    private void OnLogLevelChanged(object? sender, EventArgs e)
+    {
+        if (sender is not WinForms.ToolStripMenuItem clicked)
+            return;
+
+        foreach (var item in _logLevelItems)
+            item.Checked = item == clicked;
+
+        _config.LogLevel = (string)clicked.Tag!;
+        SaveConfig();
+        _logger.LogInformation("Log level changed to {Level}", _config.LogLevel);
+    }
+
     private async void OnCheckForUpdatesClicked(object? sender, EventArgs e)
     {
-        await _updateChecker.CheckManualAsync();
+        var (hasUpdate, currentVersion, remoteVersion, msiUrl) = await _updateChecker.CheckAsync();
+        if (hasUpdate && !string.IsNullOrEmpty(remoteVersion))
+        {
+            Dispatcher.Invoke(() =>
+            {
+                var updateWindow = new UpdateWindow(
+                    currentVersion, remoteVersion, msiUrl, _updateChecker);
+                updateWindow.ShowDialog();
+            });
+        }
+        else
+        {
+            _notifyIcon.ShowBalloonTip(
+                3000,
+                "KMITL NetAuth",
+                "You are running the latest version.",
+                WinForms.ToolTipIcon.Info);
+        }
     }
 
     private void OnQuitClicked(object? sender, EventArgs e)
     {
         _notifyIcon.Visible = false;
         _notifyIcon.Dispose();
-        Application.Exit();
+        _updateChecker.Dispose();
+        System.Windows.Application.Current.Shutdown();
+    }
+
+    protected override void OnClosing(CancelEventArgs e)
+    {
+        // Prevent closing; minimize to tray instead
+        e.Cancel = true;
+        Visibility = Visibility.Hidden;
     }
 
     private void SaveConfig()
@@ -207,17 +247,5 @@ public sealed class TrayApplicationContext : ApplicationContext
         {
             _logger.LogError(ex, "Failed to save config");
         }
-    }
-
-    protected override void Dispose(bool disposing)
-    {
-        if (disposing)
-        {
-            _updateChecker.Dispose();
-            _notifyIcon.Visible = false;
-            _notifyIcon.Dispose();
-        }
-
-        base.Dispose(disposing);
     }
 }

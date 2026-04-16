@@ -17,7 +17,7 @@ public class DpapiCredentialStore : ICredentialStore
         var base64 = Convert.ToBase64String(encrypted);
 
         var data = new Dictionary<string, string> { [username] = base64 };
-        var json = JsonSerializer.Serialize(data);
+        var json = JsonSerializer.Serialize(data, CredentialJsonContext.Default.DictionaryStringString);
 
         var path = ConfigPaths.GetCredentialPath();
         var dir = Path.GetDirectoryName(path);
@@ -35,7 +35,7 @@ public class DpapiCredentialStore : ICredentialStore
             return Task.FromResult<string?>(null);
 
         var json = File.ReadAllText(path);
-        var data = JsonSerializer.Deserialize<Dictionary<string, string>>(json);
+        var data = JsonSerializer.Deserialize(json, CredentialJsonContext.Default.DictionaryStringString);
 
         if (data == null || !data.TryGetValue(username, out var base64))
             return Task.FromResult<string?>(null);
@@ -52,11 +52,11 @@ public class DpapiCredentialStore : ICredentialStore
             return Task.CompletedTask;
 
         var json = File.ReadAllText(path);
-        var data = JsonSerializer.Deserialize<Dictionary<string, string>>(json);
+        var data = JsonSerializer.Deserialize(json, CredentialJsonContext.Default.DictionaryStringString);
 
         if (data != null && data.Remove(username))
         {
-            var updatedJson = JsonSerializer.Serialize(data);
+            var updatedJson = JsonSerializer.Serialize(data, CredentialJsonContext.Default.DictionaryStringString);
             File.WriteAllText(path, updatedJson);
         }
 

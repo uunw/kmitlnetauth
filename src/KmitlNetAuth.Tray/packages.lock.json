@@ -1,7 +1,7 @@
 {
   "version": 2,
   "dependencies": {
-    "net10.0-windows7.0": {
+    "net10.0-windows10.0.17763": {
       "Microsoft.Extensions.Hosting": {
         "type": "Direct",
         "requested": "[10.0.6, )",
@@ -61,6 +61,24 @@
         "contentHash": "fKL7mXv7qaiNBUC71ssvn/dU0k9t0o45+qm2XgKAlSt19xF+ijjxyA3R6HmCgfKEKwfcfkwWjayuQtRueZFkYw==",
         "dependencies": {
           "Serilog": "4.2.0"
+        }
+      },
+      "WPF-UI": {
+        "type": "Direct",
+        "requested": "[4.2.0, )",
+        "resolved": "4.2.0",
+        "contentHash": "cLJCqIYGtbSU8da9UnPV83SU5XttiM+BEZWW/jLSLjjmBvK2s54oDcO2wP36GEVgiXu5/QXJHlgXk0f14Cvw3g==",
+        "dependencies": {
+          "WPF-UI.Abstractions": "4.2.0"
+        }
+      },
+      "WPF-UI.Tray": {
+        "type": "Direct",
+        "requested": "[4.2.0, )",
+        "resolved": "4.2.0",
+        "contentHash": "/t6fXMMuZ7tcQ6EKecG5e3Qyt9tdtKQP0u8gqpn+v+IDVVPWDXOsdDQ6t7QPteXi4UqGWFi8/ARoxzuNJ+RvFg==",
+        "dependencies": {
+          "WPF-UI": "4.2.0"
         }
       },
       "Microsoft.Extensions.Configuration": {
@@ -309,6 +327,11 @@
         "type": "Transitive",
         "resolved": "10.0.6",
         "contentHash": "RMe4gRBwSVd1O6HVRjNwLgcH2jjrT8sHyNRJegZLX68voA+HzMf1xZPvFxMMDpyW86B9U2pYslgl4DFCE61WyA=="
+      },
+      "WPF-UI.Abstractions": {
+        "type": "Transitive",
+        "resolved": "4.2.0",
+        "contentHash": "N4/ODw2F7yniiaEO6aEaxFC8aMJDJTGoeNNv3LLXFJs+qY2Flu9fMqFrRfcCFTk4ZKg1+guUB6Y0QKi6AGt88w=="
       },
       "kmitlnetauth.core": {
         "type": "Project",

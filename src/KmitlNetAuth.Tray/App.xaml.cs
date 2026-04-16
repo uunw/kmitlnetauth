@@ -1,34 +1,39 @@
+using System.IO;
 using System.Runtime.Versioning;
 using KmitlNetAuth.Core;
 using KmitlNetAuth.Core.DependencyInjection;
-using KmitlNetAuth.Tray;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Serilog;
 
-[SupportedOSPlatform("windows")]
-internal static class Program
+namespace KmitlNetAuth.Tray;
+
+[SupportedOSPlatform("windows10.0.17763.0")]
+public partial class App : System.Windows.Application
 {
-    [STAThread]
-    static void Main()
+    private IHost? _host;
+
+    protected override void OnStartup(System.Windows.StartupEventArgs e)
     {
-        Application.SetHighDpiMode(HighDpiMode.SystemAware);
-        Application.EnableVisualStyles();
-        Application.SetCompatibleTextRenderingDefault(false);
+        base.OnStartup(e);
 
         var configPath = ConfigPaths.Resolve();
         var config = Config.Load(configPath);
 
-        // If no username, show settings form for first-time setup
+        // If no username, show settings window for first-time setup
         if (string.IsNullOrEmpty(config.Username))
         {
             var dir = Path.GetDirectoryName(configPath);
             if (!string.IsNullOrEmpty(dir))
                 Directory.CreateDirectory(dir);
 
-            using var setupForm = new SettingsForm(config, configPath, credentialStore: null);
-            if (setupForm.ShowDialog() != DialogResult.OK)
-                return; // User cancelled first-time setup
+            var setupWindow = new SettingsWindow(config, configPath, credentialStore: null);
+            var result = setupWindow.ShowDialog();
+            if (result != true)
+            {
+                Shutdown();
+                return;
+            }
         }
 
         var logDir = ConfigPaths.GetLogDirectory();
@@ -48,12 +53,23 @@ internal static class Program
         builder.Services.AddKmitlNetAuth(config);
         builder.Services.AddHostedService<AuthWorker>();
 
-        var host = builder.Build();
-        _ = host.StartAsync();
+        _host = builder.Build();
+        _ = _host.StartAsync();
 
-        Application.Run(new TrayApplicationContext(host.Services, configPath));
+        var mainWindow = new MainWindow(_host.Services, configPath);
+        MainWindow = mainWindow;
+        // MainWindow stays hidden; it manages the tray icon
+    }
 
-        host.StopAsync().GetAwaiter().GetResult();
+    protected override void OnExit(System.Windows.ExitEventArgs e)
+    {
+        if (_host != null)
+        {
+            _host.StopAsync().GetAwaiter().GetResult();
+            _host.Dispose();
+        }
+
         Log.CloseAndFlush();
+        base.OnExit(e);
     }
 }
