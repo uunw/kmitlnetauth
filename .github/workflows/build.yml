@@ -264,25 +264,32 @@ jobs:
     steps:
       - uses: actions/checkout@v6
 
-      - uses: actions/download-artifact@v7
+      - uses: actions/download-artifact@v4
         with:
           path: artifacts
 
       - name: Prepare release assets
         run: |
+          echo "=== Artifact structure ==="
+          find artifacts/ -type f | head -40
           mkdir -p release
+
           # Linux amd64
-          cp artifacts/linux-amd64/publish/linux-x64/kmitlnetauth release/kmitlnetauth-linux-amd64
-          cp artifacts/linux-amd64/publish/deb/*.deb release/
-          cp artifacts/linux-amd64/publish/rpm/*.rpm release/
+          find artifacts/linux-amd64 -name "kmitlnetauth" -type f -exec cp {} release/kmitlnetauth-linux-amd64 \;
+          find artifacts/linux-amd64 -name "*.deb" -exec cp {} release/ \;
+          find artifacts/linux-amd64 -name "*.rpm" -exec cp {} release/ \;
+
           # Linux arm64
-          cp artifacts/linux-arm64/publish/linux-arm64/kmitlnetauth release/kmitlnetauth-linux-arm64
-          cp artifacts/linux-arm64/publish/deb/*.deb release/
-          cp artifacts/linux-arm64/publish/rpm/*.rpm release/
+          find artifacts/linux-arm64 -name "kmitlnetauth" -type f -exec cp {} release/kmitlnetauth-linux-arm64 \;
+          find artifacts/linux-arm64 -name "*.deb" -exec cp {} release/ \;
+          find artifacts/linux-arm64 -name "*.rpm" -exec cp {} release/ \;
+
           # Windows
-          cp artifacts/windows-x64/publish/win-x64-cli/kmitlnetauth.exe release/kmitlnetauth-win-x64.exe
-          cp artifacts/windows-x64/publish/win-x64-tray/kmitlnetauth-tray.exe release/kmitlnetauth-tray-win-x64.exe
-          cp artifacts/windows-x64/publish/*.msi release/
+          find artifacts/windows-x64 -name "kmitlnetauth.exe" -exec cp {} release/kmitlnetauth-win-x64.exe \;
+          find artifacts/windows-x64 -name "kmitlnetauth-tray.exe" -exec cp {} release/kmitlnetauth-tray-win-x64.exe \;
+          find artifacts/windows-x64 -name "*.msi" -exec cp {} release/ \;
+
+          echo "=== Release assets ==="
           ls -lh release/
 
       - name: Create tag and release
