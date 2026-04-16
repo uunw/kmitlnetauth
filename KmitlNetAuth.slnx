@@ -4,4 +4,8 @@
     <Project Path="src/KmitlNetAuth.Core/KmitlNetAuth.Core.csproj" />
     <Project Path="src/KmitlNetAuth.Tray/KmitlNetAuth.Tray.csproj" />
   </Folder>
+  <Folder Name="/test/">
+    <Project Path="test/KmitlNetAuth.Cli.Tests/KmitlNetAuth.Cli.Tests.csproj" />
+    <Project Path="test/KmitlNetAuth.Core.Tests/KmitlNetAuth.Core.Tests.csproj" />
+  </Folder>
 </Solution>

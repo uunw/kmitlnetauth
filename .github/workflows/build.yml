@@ -52,6 +52,10 @@ jobs:
       - name: Restore
         run: dotnet restore
 
+      - name: Run tests
+        if: matrix.arch == 'amd64'
+        run: dotnet test --no-restore --verbosity normal
+
       # Standalone self-contained binary for GitHub Releases direct download
       - name: Publish CLI - standalone (${{ matrix.rid }})
         run: >
