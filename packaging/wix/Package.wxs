@@ -4,7 +4,7 @@
   <Package
     Name="KMITL NetAuth"
     Manufacturer="Nonthaphan Inthawong"
-    Version="!(wix.MsiVersion)"
+    Version="!(wix.MsiVersion=1.0.0)"
     UpgradeCode="6D611230-2216-4318-8743-730107865261"
     Scope="perMachine"
     InstallerVersion="500">
