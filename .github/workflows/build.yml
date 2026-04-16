@@ -19,6 +19,7 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       version: ${{ steps.version.outputs.version }}
+      msi_version: ${{ steps.version.outputs.msi_version }}
     steps:
       - name: Set version
         id: version
@@ -28,6 +29,8 @@ jobs:
           else
             echo "version=$(date +%Y%m%d).${{ github.run_number }}" >> $GITHUB_OUTPUT
           fi
+          # MSI version: YY.M.{run_number} (fits a.b.c where a<=255, b<=255, c<=65535)
+          echo "msi_version=$(date +%-y.%-m.)${{ github.run_number }}" >> $GITHUB_OUTPUT
 
   build-linux:
     needs: version
@@ -229,8 +232,11 @@ jobs:
           -p:Version=${{ needs.version.outputs.version }}
           -o ./publish/win-x64
 
-      - name: Install WiX Toolset v5
-        run: dotnet tool install --global wix --version 5.0.2
+      - name: Install WiX Toolset
+        run: dotnet tool install --global wix
+
+      - name: Accept WiX OSMF EULA
+        run: wix eula accept
 
       # Generate a WiX fragment that lists every file from the publish folder.
       # Each file becomes its own Component (WiX best practice for per-file ref-counting).
@@ -269,7 +275,7 @@ jobs:
           Get-Content "./publish/Files.wxs"
 
       - name: Add WiX UI extension
-        run: wix extension add WixToolset.UI.wixext/5.0.2
+        run: wix extension add WixToolset.UI.wixext
 
       - name: Build MSI
         run: >
@@ -277,7 +283,7 @@ jobs:
           -arch x64
           -ext WixToolset.UI.wixext
           -bindpath PublishDir=./publish/win-x64
-          -d MsiVersion=1.0.${{ github.run_number }}
+          -d MsiVersion=${{ needs.version.outputs.msi_version }}
           -o ./publish/kmitlnetauth-${{ needs.version.outputs.version }}.msi
 
       - uses: actions/upload-artifact@v7
