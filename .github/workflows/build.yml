@@ -1,0 +1,197 @@
+name: Build & Release
+
+on:
+  push:
+    branches: [main]
+    tags: ["v*"]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: write
+  packages: write
+
+env:
+  DOTNET_VERSION: "10.0.x"
+  DOTNET_QUALITY: "preview"
+
+jobs:
+  build-linux:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+          dotnet-quality: ${{ env.DOTNET_QUALITY }}
+
+      - name: Set version
+        run: |
+          if [[ "$GITHUB_REF" == refs/tags/v* ]]; then
+            echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_ENV
+          else
+            echo "VERSION=$(date +%Y%m%d).${{ github.run_number }}" >> $GITHUB_ENV
+          fi
+
+      - name: Restore
+        run: dotnet restore
+
+      - name: Publish CLI (linux-x64)
+        run: >
+          dotnet publish src/KmitlNetAuth.Cli/KmitlNetAuth.Cli.csproj
+          -c Release
+          -r linux-x64
+          --self-contained true
+          /p:PublishSingleFile=true
+          /p:Version=${{ env.VERSION }}
+          -o ./publish/linux-x64
+
+      - name: Copy packaging assets
+        run: |
+          cp packaging/systemd/kmitlnetauth.service ./publish/linux-x64/
+
+      - name: Install dotnet-deb
+        run: dotnet tool install --global dotnet-deb
+
+      - name: Build .deb package
+        run: >
+          dotnet deb
+          -c Release
+          -r linux-x64
+          /p:Version=${{ env.VERSION }}
+          -o ./publish/deb
+        working-directory: src/KmitlNetAuth.Cli
+
+      - name: Install dotnet-rpm
+        run: dotnet tool install --global dotnet-rpm
+
+      - name: Build .rpm package
+        run: >
+          dotnet rpm
+          -c Release
+          -r linux-x64
+          /p:Version=${{ env.VERSION }}
+          -o ./publish/rpm
+        working-directory: src/KmitlNetAuth.Cli
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: linux-packages
+          path: |
+            publish/linux-x64/kmitlnetauth
+            publish/deb/*.deb
+            publish/rpm/*.rpm
+
+      - name: Upload to Release
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            publish/linux-x64/kmitlnetauth
+            publish/deb/*.deb
+            publish/rpm/*.rpm
+
+  build-windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+          dotnet-quality: ${{ env.DOTNET_QUALITY }}
+
+      - name: Set version
+        shell: bash
+        run: |
+          if [[ "$GITHUB_REF" == refs/tags/v* ]]; then
+            echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_ENV
+          else
+            echo "VERSION=$(date +%Y%m%d).${{ github.run_number }}" >> $GITHUB_ENV
+          fi
+
+      - name: Restore
+        run: dotnet restore
+
+      - name: Publish CLI (win-x64)
+        run: >
+          dotnet publish src/KmitlNetAuth.Cli/KmitlNetAuth.Cli.csproj
+          -c Release
+          -r win-x64
+          --self-contained true
+          /p:PublishSingleFile=true
+          /p:Version=${{ env.VERSION }}
+          -o ./publish/win-x64-cli
+
+      - name: Publish Tray (win-x64)
+        run: >
+          dotnet publish src/KmitlNetAuth.Tray/KmitlNetAuth.Tray.csproj
+          -c Release
+          -r win-x64
+          --self-contained true
+          /p:PublishSingleFile=true
+          /p:Version=${{ env.VERSION }}
+          -o ./publish/win-x64-tray
+
+      - name: Install WiX Toolset
+        run: dotnet tool install --global wix
+
+      - name: Build MSI
+        run: >
+          wix build packaging/wix/Package.wxs
+          -bindpath CliPublish=./publish/win-x64-cli
+          -bindpath TrayPublish=./publish/win-x64-tray
+          -o ./publish/kmitlnetauth-${{ env.VERSION }}.msi
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: windows-installer
+          path: publish/*.msi
+
+      - name: Upload to Release
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: publish/*.msi
+
+  build-docker:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set version
+        run: |
+          if [[ "$GITHUB_REF" == refs/tags/v* ]]; then
+            echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_ENV
+          else
+            echo "VERSION=$(date +%Y%m%d).${{ github.run_number }}" >> $GITHUB_ENV
+          fi
+
+      - uses: docker/setup-buildx-action@v3
+
+      - uses: docker/login-action@v3
+        if: github.event_name != 'pull_request'
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Docker meta
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ghcr.io/${{ github.repository }}
+          tags: |
+            type=raw,value=latest,enable={{is_default_branch}}
+            type=raw,value=${{ env.VERSION }}
+
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: ${{ github.event_name != 'pull_request' }}
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          build-args: VERSION=${{ env.VERSION }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max

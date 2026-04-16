@@ -1,0 +1,7 @@
+*
+!src/**/*.csproj
+!src/**/*.cs
+!Directory.Build.props
+!Directory.Packages.props
+!packaging/systemd/kmitlnetauth.service
+!Dockerfile

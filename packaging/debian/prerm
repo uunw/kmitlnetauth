@@ -1,0 +1,8 @@
+#!/bin/bash
+set -e
+
+if systemctl is-active --quiet kmitlnetauth.service; then
+    systemctl stop kmitlnetauth.service
+fi
+
+systemctl disable kmitlnetauth.service || true

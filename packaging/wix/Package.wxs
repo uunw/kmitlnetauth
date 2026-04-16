@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs">
+  <Package
+    Name="KMITL NetAuth"
+    Manufacturer="Nonthaphan Inthawong"
+    Version="!(bind.FileVersion.KmitlNetAuthCli)"
+    UpgradeCode="6D611230-2216-4318-8743-730107865261"
+    Scope="perMachine">
+
+    <MajorUpgrade
+      DowngradeErrorMessage="A newer version of KMITL NetAuth is already installed." />
+
+    <MediaTemplate EmbedCab="yes" />
+
+    <!-- Install directory -->
+    <StandardDirectory Id="ProgramFiles64Folder">
+      <Directory Id="INSTALLFOLDER" Name="KMITL NetAuth">
+        <Component Id="CliComponent" Guid="A1B2C3D4-E5F6-7890-ABCD-EF1234567890">
+          <File Id="KmitlNetAuthCli" Source="!(bindpath.CliPublish)\kmitlnetauth.exe" KeyPath="yes" />
+        </Component>
+        <Component Id="TrayComponent" Guid="B2C3D4E5-F6A7-8901-BCDE-F12345678901">
+          <File Id="KmitlNetAuthTray" Source="!(bindpath.TrayPublish)\kmitlnetauth-tray.exe" KeyPath="yes" />
+        </Component>
+      </Directory>
+    </StandardDirectory>
+
+    <!-- Start Menu shortcuts -->
+    <StandardDirectory Id="ProgramMenuFolder">
+      <Directory Id="ProgramMenuDir" Name="KMITL NetAuth">
+        <Component Id="StartMenuShortcuts" Guid="C3D4E5F6-A7B8-9012-CDEF-123456789012">
+          <Shortcut Id="TrayShortcut"
+            Name="KMITL NetAuth"
+            Target="[INSTALLFOLDER]kmitlnetauth-tray.exe"
+            WorkingDirectory="INSTALLFOLDER" />
+          <Shortcut Id="UninstallShortcut"
+            Name="Uninstall KMITL NetAuth"
+            Target="[SystemFolder]msiexec.exe"
+            Arguments="/x [ProductCode]" />
+          <RemoveFolder Id="RemoveProgramMenuDir" On="uninstall" />
+          <RegistryValue Root="HKCU" Key="Software\KmitlNetAuth" Name="StartMenu" Type="integer" Value="1" KeyPath="yes" />
+        </Component>
+      </Directory>
+    </StandardDirectory>
+
+    <!-- Desktop shortcut -->
+    <StandardDirectory Id="DesktopFolder">
+      <Component Id="DesktopShortcut" Guid="D4E5F6A7-B8C9-0123-DEF0-123456789ABC">
+        <Shortcut Id="DesktopTrayShortcut"
+          Name="KMITL NetAuth"
+          Target="[INSTALLFOLDER]kmitlnetauth-tray.exe"
+          WorkingDirectory="INSTALLFOLDER" />
+        <RegistryValue Root="HKCU" Key="Software\KmitlNetAuth" Name="Desktop" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+    </StandardDirectory>
+
+    <!-- Feature definition -->
+    <Feature Id="MainFeature" Title="KMITL NetAuth" Level="1">
+      <ComponentRef Id="CliComponent" />
+      <ComponentRef Id="TrayComponent" />
+      <ComponentRef Id="StartMenuShortcuts" />
+      <ComponentRef Id="DesktopShortcut" />
+    </Feature>
+
+    <!-- Launch after install -->
+    <CustomAction Id="LaunchTray" FileRef="KmitlNetAuthTray" ExeCommand="" Return="asyncNoWait" />
+    <InstallExecuteSequence>
+      <Custom Action="LaunchTray" After="InstallFinalize">NOT Installed AND NOT REMOVE</Custom>
+    </InstallExecuteSequence>
+
+  </Package>
+</Wix>

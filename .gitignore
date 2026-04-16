@@ -39,3 +39,4 @@ config.json
 *.msi
 *.exe
 !src/**/*.exe
+*.csproj.user

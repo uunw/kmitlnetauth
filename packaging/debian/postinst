@@ -1,0 +1,6 @@
+#!/bin/bash
+set -e
+
+systemctl daemon-reload
+systemctl enable kmitlnetauth.service
+systemctl start kmitlnetauth.service || true
