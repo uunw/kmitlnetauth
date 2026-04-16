@@ -3,8 +3,58 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
     Title="KMITL NetAuth"
-    Width="0" Height="0"
-    ShowInTaskbar="False"
-    WindowStyle="None"
-    Visibility="Hidden">
+    Height="600" Width="900"
+    WindowStartupLocation="CenterScreen"
+    WindowBackdropType="Mica"
+    ExtendsContentIntoTitleBar="True">
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+
+        <ui:TitleBar Grid.Row="0" Title="KMITL NetAuth" />
+
+        <Grid Grid.Row="1">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="200" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+
+            <!-- Sidebar -->
+            <Border Grid.Column="0" Background="{DynamicResource ControlFillColorDefaultBrush}"
+                    BorderBrush="{DynamicResource ControlStrokeColorDefaultBrush}" BorderThickness="0,0,1,0">
+                <StackPanel Margin="0,8">
+                    <ui:Button x:Name="NavDashboard" Content="Dashboard"
+                        Icon="{ui:SymbolIcon Home24}" HorizontalAlignment="Stretch"
+                        Appearance="Transparent" Click="NavButton_Click" Tag="dashboard"
+                        Margin="4,2" />
+                    <ui:Button x:Name="NavLog" Content="Log"
+                        Icon="{ui:SymbolIcon DocumentText24}" HorizontalAlignment="Stretch"
+                        Appearance="Transparent" Click="NavButton_Click" Tag="log"
+                        Margin="4,2" />
+                    <ui:Button x:Name="NavSettings" Content="Settings"
+                        Icon="{ui:SymbolIcon Settings24}" HorizontalAlignment="Stretch"
+                        Appearance="Transparent" Click="NavButton_Click" Tag="settings"
+                        Margin="4,2" />
+
+                    <!-- Spacer -->
+                    <Border Height="1" Background="{DynamicResource ControlStrokeColorDefaultBrush}"
+                            Margin="12,8" />
+
+                    <ui:Button x:Name="NavDebug" Content="Debug"
+                        Icon="{ui:SymbolIcon Bug24}" HorizontalAlignment="Stretch"
+                        Appearance="Transparent" Click="NavButton_Click" Tag="debug"
+                        Margin="4,2" />
+                    <ui:Button x:Name="NavAbout" Content="About"
+                        Icon="{ui:SymbolIcon Info24}" HorizontalAlignment="Stretch"
+                        Appearance="Transparent" Click="NavButton_Click" Tag="about"
+                        Margin="4,2" />
+                </StackPanel>
+            </Border>
+
+            <!-- Content area -->
+            <Frame x:Name="PageFrame" Grid.Column="1" NavigationUIVisibility="Hidden" />
+        </Grid>
+    </Grid>
 </ui:FluentWindow>

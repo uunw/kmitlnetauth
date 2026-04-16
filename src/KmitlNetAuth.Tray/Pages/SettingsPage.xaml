@@ -1,0 +1,173 @@
+<Page x:Class="KmitlNetAuth.Tray.Pages.SettingsPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+    Title="Settings">
+    <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="24,16,24,24">
+        <StackPanel>
+            <TextBlock Text="Settings" FontSize="28" FontWeight="Bold" Margin="0,0,0,24" />
+
+            <!-- Auth Section -->
+            <TextBlock Text="Authentication" FontSize="16" FontWeight="SemiBold" Margin="0,0,0,12" />
+
+            <ui:Card Margin="0,0,0,16">
+                <StackPanel>
+                    <TextBlock Text="Username (Student ID)" FontSize="12" Margin="0,0,0,4"
+                        Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                    <ui:TextBox x:Name="UsernameBox" PlaceholderText="e.g. 67012345" Margin="0,0,0,4" />
+                    <TextBlock x:Name="UsernameError" Text="Username is required" FontSize="11"
+                        Foreground="Red" Visibility="Collapsed" Margin="0,0,0,8" />
+
+                    <TextBlock Text="Password" FontSize="12" Margin="0,8,0,4"
+                        Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                    <ui:PasswordBox x:Name="PasswordBox" PlaceholderText="Password" Margin="0,0,0,8" />
+
+                    <TextBlock Text="IP Address" FontSize="12" Margin="0,8,0,4"
+                        Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                    <ui:TextBox x:Name="IpAddressBox" PlaceholderText="Auto-detect if empty" Margin="0,0,0,4" />
+                </StackPanel>
+            </ui:Card>
+
+            <!-- Network Section -->
+            <TextBlock Text="Network" FontSize="16" FontWeight="SemiBold" Margin="0,8,0,12" />
+
+            <ui:Card Margin="0,0,0,16">
+                <StackPanel>
+                    <TextBlock Text="Portal URL" FontSize="12" Margin="0,0,0,4"
+                        Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                    <ui:TextBox x:Name="PortalUrlBox" Margin="0,0,0,8" />
+
+                    <TextBlock Text="Heartbeat URL" FontSize="12" Margin="0,8,0,4"
+                        Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                    <ui:TextBox x:Name="HeartbeatUrlBox" Margin="0,0,0,8" />
+
+                    <TextBlock Text="Internet Check URL" FontSize="12" Margin="0,8,0,4"
+                        Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                    <ui:TextBox x:Name="InternetCheckUrlBox" Margin="0,0,0,8" />
+
+                    <TextBlock Text="Timeout (seconds)" FontSize="12" Margin="0,8,0,4"
+                        Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                    <ui:NumberBox x:Name="TimeoutBox" Minimum="1" Maximum="120"
+                        SpinButtonPlacementMode="Inline" Margin="0,0,0,8" />
+
+                    <Grid Margin="0,8,0,4">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Text="Accept Invalid Certificates" VerticalAlignment="Center" Grid.Column="0" />
+                        <ui:ToggleSwitch x:Name="AcceptInvalidCertsToggle" Grid.Column="1" />
+                    </Grid>
+                </StackPanel>
+            </ui:Card>
+
+            <!-- Service Section -->
+            <TextBlock Text="Service" FontSize="16" FontWeight="SemiBold" Margin="0,8,0,12" />
+
+            <ui:Card Margin="0,0,0,16">
+                <StackPanel>
+                    <TextBlock Text="Interval (seconds)" FontSize="12" Margin="0,0,0,4"
+                        Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                    <ui:NumberBox x:Name="IntervalBox" Minimum="10" Maximum="86400"
+                        SpinButtonPlacementMode="Inline" Margin="0,0,0,8" />
+
+                    <TextBlock Text="Max Login Attempts" FontSize="12" Margin="0,8,0,4"
+                        Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                    <ui:NumberBox x:Name="MaxAttemptBox" Minimum="1" Maximum="100"
+                        SpinButtonPlacementMode="Inline" Margin="0,0,0,8" />
+
+                    <TextBlock Text="Backoff Interval (seconds)" FontSize="12" Margin="0,8,0,4"
+                        Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                    <ui:NumberBox x:Name="BackoffIntervalBox" Minimum="10" Maximum="3600"
+                        SpinButtonPlacementMode="Inline" Margin="0,0,0,8" />
+
+                    <Grid Margin="0,8,0,4">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Text="Auto Login" VerticalAlignment="Center" Grid.Column="0" />
+                        <ui:ToggleSwitch x:Name="AutoLoginToggle" Grid.Column="1" />
+                    </Grid>
+
+                    <Grid Margin="0,8,0,4">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <StackPanel Grid.Column="0">
+                            <TextBlock Text="Auto Start with Windows" VerticalAlignment="Center" />
+                            <TextBlock x:Name="AutoStartStatus" FontSize="11"
+                                Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                        </StackPanel>
+                        <ui:ToggleSwitch x:Name="AutoStartToggle" Grid.Column="1"
+                            Checked="OnAutoStartChanged" Unchecked="OnAutoStartChanged" />
+                    </Grid>
+                </StackPanel>
+            </ui:Card>
+
+            <!-- Logging Section -->
+            <TextBlock Text="Logging" FontSize="16" FontWeight="SemiBold" Margin="0,8,0,12" />
+
+            <ui:Card Margin="0,0,0,16">
+                <StackPanel>
+                    <TextBlock Text="Log Level" FontSize="12" Margin="0,0,0,4"
+                        Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                    <ComboBox x:Name="LogLevelBox" Width="200" HorizontalAlignment="Left" Margin="0,0,0,8">
+                        <ComboBoxItem Content="Error" />
+                        <ComboBoxItem Content="Warning" />
+                        <ComboBoxItem Content="Information" />
+                        <ComboBoxItem Content="Debug" />
+                        <ComboBoxItem Content="Verbose" />
+                    </ComboBox>
+
+                    <TextBlock Text="Log Retention (days)" FontSize="12" Margin="0,8,0,4"
+                        Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                    <ui:NumberBox x:Name="LogRetentionBox" Minimum="1" Maximum="365"
+                        SpinButtonPlacementMode="Inline" Margin="0,0,0,4" />
+                </StackPanel>
+            </ui:Card>
+
+            <!-- Misc Section -->
+            <TextBlock Text="Miscellaneous" FontSize="16" FontWeight="SemiBold" Margin="0,8,0,12" />
+
+            <ui:Card Margin="0,0,0,16">
+                <StackPanel>
+                    <Grid Margin="0,0,0,4">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Text="Desktop Notifications" VerticalAlignment="Center" Grid.Column="0" />
+                        <ui:ToggleSwitch x:Name="NotificationsToggle" Grid.Column="1" />
+                    </Grid>
+
+                    <Grid Margin="0,8,0,4">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Text="Start Minimized to Tray" VerticalAlignment="Center" Grid.Column="0" />
+                        <ui:ToggleSwitch x:Name="StartMinimizedToggle" Grid.Column="1" />
+                    </Grid>
+
+                    <Grid Margin="0,8,0,4">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Text="Auto-check for Updates" VerticalAlignment="Center" Grid.Column="0" />
+                        <ui:ToggleSwitch x:Name="AutoUpdateToggle" Grid.Column="1" />
+                    </Grid>
+                </StackPanel>
+            </ui:Card>
+
+            <!-- Save -->
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,8,0,16">
+                <TextBlock x:Name="SaveStatus" VerticalAlignment="Center" Margin="0,0,12,0"
+                    FontSize="12" Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                <ui:Button x:Name="SaveButton" Content="Save" Appearance="Primary" Click="OnSaveClicked" />
+            </StackPanel>
+        </StackPanel>
+    </ScrollViewer>
+</Page>

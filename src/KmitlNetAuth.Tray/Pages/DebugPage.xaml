@@ -1,0 +1,74 @@
+<Page x:Class="KmitlNetAuth.Tray.Pages.DebugPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+    Title="Debug">
+    <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="24,16,24,24">
+        <StackPanel>
+            <TextBlock Text="Debug" FontSize="28" FontWeight="Bold" Margin="0,0,0,24" />
+
+            <!-- System Info -->
+            <TextBlock Text="System Information" FontSize="16" FontWeight="SemiBold" Margin="0,0,0,12" />
+
+            <ui:Card Margin="0,0,0,16">
+                <StackPanel>
+                    <TextBlock Text="Config File Path" FontSize="12"
+                        Foreground="{DynamicResource TextFillColorSecondaryBrush}" Margin="0,0,0,4" />
+                    <TextBlock x:Name="ConfigPathText" TextWrapping="Wrap" Margin="0,0,0,12" />
+
+                    <TextBlock Text="Credential Store" FontSize="12"
+                        Foreground="{DynamicResource TextFillColorSecondaryBrush}" Margin="0,0,0,4" />
+                    <TextBlock x:Name="CredentialStoreText" Margin="0,0,0,12" />
+
+                    <TextBlock Text="MAC Address" FontSize="12"
+                        Foreground="{DynamicResource TextFillColorSecondaryBrush}" Margin="0,0,0,4" />
+                    <TextBlock x:Name="MacAddressText" Margin="0,0,0,12" />
+
+                    <TextBlock Text="Current IP" FontSize="12"
+                        Foreground="{DynamicResource TextFillColorSecondaryBrush}" Margin="0,0,0,4" />
+                    <TextBlock x:Name="CurrentIpText" Margin="0,0,0,12" />
+
+                    <TextBlock Text="DHCP Status" FontSize="12"
+                        Foreground="{DynamicResource TextFillColorSecondaryBrush}" Margin="0,0,0,4" />
+                    <TextBlock x:Name="DhcpStatusText" Margin="0,0,0,12" />
+
+                    <TextBlock Text="Auth Endpoints" FontSize="12"
+                        Foreground="{DynamicResource TextFillColorSecondaryBrush}" Margin="0,0,0,4" />
+                    <TextBlock x:Name="EndpointsText" TextWrapping="Wrap" />
+                </StackPanel>
+            </ui:Card>
+
+            <!-- Raw Config -->
+            <TextBlock Text="Raw Config (TOML)" FontSize="16" FontWeight="SemiBold" Margin="0,8,0,12" />
+
+            <ui:Card Margin="0,0,0,16">
+                <TextBox x:Name="RawConfigText"
+                    IsReadOnly="True"
+                    VerticalScrollBarVisibility="Auto"
+                    HorizontalScrollBarVisibility="Auto"
+                    TextWrapping="NoWrap"
+                    FontFamily="Consolas"
+                    FontSize="12"
+                    MaxHeight="300"
+                    AcceptsReturn="True" />
+            </ui:Card>
+
+            <!-- Test Actions -->
+            <TextBlock Text="Test Actions" FontSize="16" FontWeight="SemiBold" Margin="0,8,0,12" />
+
+            <ui:Card Margin="0,0,0,16">
+                <StackPanel>
+                    <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
+                        <ui:Button x:Name="TestLoginButton" Content="Test Login" Margin="0,0,8,0"
+                            Click="OnTestLoginClicked" />
+                        <ui:Button x:Name="TestHeartbeatButton" Content="Test Heartbeat" Margin="0,0,8,0"
+                            Click="OnTestHeartbeatClicked" />
+                        <ui:Button x:Name="TestInternetButton" Content="Test Internet Check"
+                            Click="OnTestInternetClicked" />
+                    </StackPanel>
+                    <TextBlock x:Name="TestResultText" TextWrapping="Wrap" FontFamily="Consolas" FontSize="12" />
+                </StackPanel>
+            </ui:Card>
+        </StackPanel>
+    </ScrollViewer>
+</Page>

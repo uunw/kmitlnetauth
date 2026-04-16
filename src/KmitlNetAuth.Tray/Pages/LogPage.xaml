@@ -1,0 +1,38 @@
+<Page x:Class="KmitlNetAuth.Tray.Pages.LogPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+    Title="Log">
+    <Grid Margin="24,16,24,24">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+
+        <TextBlock Grid.Row="0" Text="Log" FontSize="28" FontWeight="Bold" Margin="0,0,0,16" />
+
+        <!-- Toolbar -->
+        <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="0,0,0,12">
+            <TextBlock Text="Filter:" VerticalAlignment="Center" Margin="0,0,8,0" />
+            <ComboBox x:Name="LevelFilter" Width="140" SelectionChanged="OnFilterChanged">
+                <ComboBoxItem Content="All" IsSelected="True" />
+                <ComboBoxItem Content="Error" />
+                <ComboBoxItem Content="Warning" />
+                <ComboBoxItem Content="Information" />
+                <ComboBoxItem Content="Debug" />
+            </ComboBox>
+            <ui:Button Content="Clear" Margin="12,0,0,0" Click="OnClearClicked" />
+        </StackPanel>
+
+        <!-- Log output -->
+        <TextBox x:Name="LogOutput" Grid.Row="2"
+            IsReadOnly="True"
+            VerticalScrollBarVisibility="Auto"
+            HorizontalScrollBarVisibility="Auto"
+            TextWrapping="NoWrap"
+            FontFamily="Consolas"
+            FontSize="12"
+            AcceptsReturn="True" />
+    </Grid>
+</Page>

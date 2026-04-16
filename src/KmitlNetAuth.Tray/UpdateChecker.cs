@@ -24,7 +24,7 @@ public sealed class UpdateChecker : IDisposable
         _logger = logger;
 
         _httpClient = new HttpClient();
-        _httpClient.DefaultRequestHeaders.Add("User-Agent", "kmitlnetauth-tray");
+        _httpClient.DefaultRequestHeaders.Add("User-Agent", "KmitlNetAuth");
         _httpClient.DefaultRequestHeaders.Add("Accept", "application/vnd.github.v3+json");
 
         _timer = new System.Timers.Timer(CheckInterval.TotalMilliseconds);
