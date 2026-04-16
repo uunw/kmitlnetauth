@@ -9,7 +9,12 @@
     <AssemblyName>kmitlnetauth-tray</AssemblyName>
     <AssemblyTitle>KMITL NetAuth</AssemblyTitle>
     <Product>KMITL NetAuth</Product>
+    <ApplicationIcon>Resources\app.ico</ApplicationIcon>
   </PropertyGroup>
+
+  <ItemGroup>
+    <Resource Include="Resources\app.ico" />
+  </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\KmitlNetAuth.Core\KmitlNetAuth.Core.csproj" />

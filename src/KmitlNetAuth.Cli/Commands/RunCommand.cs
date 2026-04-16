@@ -1,8 +1,10 @@
 using KmitlNetAuth.Core;
 using KmitlNetAuth.Core.DependencyInjection;
+using KmitlNetAuth.Core.Platform;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Serilog;
+using Spectre.Console;
 
 namespace KmitlNetAuth.Cli.Commands;
 
@@ -24,6 +26,22 @@ public static class RunCommand
             // Interactive - run setup wizard
             var tempStore = CreateCredentialStore();
             config = SetupWizard.Run(resolvedPath, tempStore);
+        }
+
+        // Warn if using DHCP and no static IP is configured (interactive mode only)
+        if (string.IsNullOrEmpty(config.IpAddress) && !daemon && Environment.UserInteractive)
+        {
+            var (isDhcp, currentIp) = DhcpDetector.GetNetworkStatus();
+            if (isDhcp && !string.IsNullOrEmpty(currentIp))
+            {
+                AnsiConsole.MarkupLine($"[yellow]Warning: Network interface is using DHCP (current IP: {currentIp})[/]");
+                if (AnsiConsole.Confirm($"Save [bold]{currentIp}[/] as static IP?", false))
+                {
+                    var tempStore = CreateCredentialStore();
+                    config.IpAddress = currentIp;
+                    config.Save(resolvedPath, tempStore);
+                }
+            }
         }
 
         var logDir = ConfigPaths.GetLogDirectory();

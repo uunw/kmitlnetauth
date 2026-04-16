@@ -2,6 +2,7 @@ using System.IO;
 using System.Runtime.Versioning;
 using KmitlNetAuth.Core;
 using KmitlNetAuth.Core.DependencyInjection;
+using KmitlNetAuth.Core.Platform;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Serilog;
@@ -33,6 +34,31 @@ public partial class App : System.Windows.Application
             {
                 Shutdown();
                 return;
+            }
+        }
+
+        // Warn if using DHCP and no static IP is configured
+        if (string.IsNullOrEmpty(config.IpAddress))
+        {
+            var (isDhcp, currentIp) = DhcpDetector.GetNetworkStatus();
+            if (isDhcp && !string.IsNullOrEmpty(currentIp))
+            {
+                var result = System.Windows.MessageBox.Show(
+                    $"Your network interface is using DHCP.\n" +
+                    $"Current IP: {currentIp}\n\n" +
+                    $"DHCP addresses may change, which could break auto-authentication.\n" +
+                    $"Would you like to save {currentIp} as your static IP in the config?\n\n" +
+                    $"Click 'Yes' to use {currentIp} as static IP.\n" +
+                    $"Click 'No' to continue with DHCP (auto-detect).",
+                    "KMITL NetAuth - Network Configuration",
+                    System.Windows.MessageBoxButton.YesNo,
+                    System.Windows.MessageBoxImage.Information);
+
+                if (result == System.Windows.MessageBoxResult.Yes)
+                {
+                    config.IpAddress = currentIp;
+                    config.Save(configPath);
+                }
             }
         }
 

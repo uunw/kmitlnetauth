@@ -106,9 +106,18 @@ public partial class MainWindow : FluentWindow
         contextMenu.Items.Add(quitItem);
 
         // Tray icon using System.Windows.Forms.NotifyIcon
+        var trayIcon = SystemIcons.Application;
+        var processPath = Environment.ProcessPath;
+        if (!string.IsNullOrEmpty(processPath))
+        {
+            var extracted = System.Drawing.Icon.ExtractAssociatedIcon(processPath);
+            if (extracted != null)
+                trayIcon = extracted;
+        }
+
         _notifyIcon = new WinForms.NotifyIcon
         {
-            Icon = SystemIcons.Application,
+            Icon = trayIcon,
             Text = "KMITL NetAuth",
             Visible = true,
             ContextMenuStrip = contextMenu,
