@@ -7,6 +7,8 @@ using KmitlNetAuth.Core.Services;
 using KmitlNetAuth.Tray.Pages;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using Wpf.Ui.Abstractions;
+using Wpf.Ui.Appearance;
 using Wpf.Ui.Controls;
 using WinForms = System.Windows.Forms;
 
@@ -22,25 +24,27 @@ public partial class MainWindow : FluentWindow
     private readonly UpdateChecker _updateChecker;
     private readonly WinForms.NotifyIcon _notifyIcon;
 
-    // Cached pages so state is preserved across navigation
-    private readonly bool _navigateToSettings;
+    // Cached page instances keyed by type. Pages have constructor dependencies
+    // that the default wpfui Activator-based creation cannot satisfy, so we
+    // pre-build them here and expose them via a custom INavigationViewPageProvider.
+    private readonly Dictionary<Type, object> _pageCache = new();
 
-    private DashboardPage? _dashboardPage;
-    private LogPage? _logPage;
-    private SettingsPage? _settingsPage;
-    private DebugPage? _debugPage;
-    private AboutPage? _aboutPage;
-
-    public MainWindow(IServiceProvider services, string configPath, bool navigateToSettings = false)
+    public MainWindow(IServiceProvider services, string configPath)
     {
+        // Watch OS theme so Mica/accent colors update on theme change.
+        SystemThemeWatcher.Watch(this);
+
         InitializeComponent();
 
         _services = services;
         _configPath = configPath;
-        _navigateToSettings = navigateToSettings;
         _authService = services.GetRequiredService<IAuthService>();
         _logger = services.GetRequiredService<ILogger<MainWindow>>();
         _updateChecker = new UpdateChecker(_logger);
+
+        // Provide pre-instantiated pages to NavigationView so it doesn't try
+        // to Activator-create pages with non-default constructors.
+        RootNavigation.SetPageProviderService(new CachedPageProvider(this));
 
         // Build tray icon
         var trayIcon = SystemIcons.Application;
@@ -78,30 +82,35 @@ public partial class MainWindow : FluentWindow
         // Auto-update check on startup
         _ = _updateChecker.StartAsync();
 
-        // Navigate to appropriate page on load
-        Loaded += (_, _) => NavigateToTag(_navigateToSettings ? "settings" : "dashboard");
+        // Navigate to the default page after the NavigationView is realized.
+        Loaded += (_, _) => RootNavigation.Navigate(typeof(DashboardPage));
     }
 
-    private void NavButton_Click(object sender, RoutedEventArgs e)
+    /// <summary>
+    /// Creates or returns the cached page instance for the given type.
+    /// Central place for wiring page constructor dependencies.
+    /// </summary>
+    private object CreatePage(Type pageType)
     {
-        if (sender is FrameworkElement el && el.Tag is string tag)
-            NavigateToTag(tag);
-    }
+        if (_pageCache.TryGetValue(pageType, out var cached))
+            return cached;
 
-    private void NavigateToTag(string tag)
-    {
-        object? page = tag switch
-        {
-            "dashboard" => _dashboardPage ??= new DashboardPage(_services),
-            "log" => _logPage ??= new LogPage(),
-            "settings" => _settingsPage ??= new SettingsPage(_services, _configPath),
-            "debug" => _debugPage ??= new DebugPage(_services, _configPath),
-            "about" => _aboutPage ??= new AboutPage(_updateChecker),
-            _ => null,
-        };
+        object page;
+        if (pageType == typeof(DashboardPage))
+            page = new DashboardPage(_services);
+        else if (pageType == typeof(LogPage))
+            page = new LogPage();
+        else if (pageType == typeof(SettingsPage))
+            page = new SettingsPage(_services, _configPath);
+        else if (pageType == typeof(DebugPage))
+            page = new DebugPage(_services, _configPath);
+        else if (pageType == typeof(AboutPage))
+            page = new AboutPage(_updateChecker);
+        else
+            throw new InvalidOperationException($"Unknown page type: {pageType}");
 
-        if (page != null)
-            PageFrame.Navigate(page);
+        _pageCache[pageType] = page;
+        return page;
     }
 
     private void ToggleVisibility()
@@ -151,5 +160,18 @@ public partial class MainWindow : FluentWindow
         // Minimize to tray instead of closing
         e.Cancel = true;
         Hide();
+    }
+
+    /// <summary>
+    /// Bridges wpfui's NavigationView page creation back to <see cref="CreatePage"/>
+    /// so every page can have DI-supplied constructor arguments and be cached.
+    /// </summary>
+    private sealed class CachedPageProvider : INavigationViewPageProvider
+    {
+        private readonly MainWindow _owner;
+
+        public CachedPageProvider(MainWindow owner) => _owner = owner;
+
+        public object? GetPage(Type pageType) => _owner.CreatePage(pageType);
     }
 }

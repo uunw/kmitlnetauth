@@ -42,7 +42,7 @@ public partial class App : System.Windows.Application
 
         var needsSetup = string.IsNullOrEmpty(config.Username);
 
-        var mainWindow = new MainWindow(_host.Services, configPath, navigateToSettings: needsSetup);
+        var mainWindow = new MainWindow(_host.Services, configPath);
         MainWindow = mainWindow;
 
         // Always show window on first-time setup; otherwise respect StartMinimized
