@@ -5,6 +5,10 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     <Version>0.0.0.1</Version>
+    <!-- AssemblyVersion has a 65535 per-part limit, so date-based versions like 20260416.1 overflow. -->
+    <!-- Use a fixed AssemblyVersion; the informational version carries the real date-based version. -->
+    <AssemblyVersion>1.0.0.0</AssemblyVersion>
+    <FileVersion>1.0.0.0</FileVersion>
     <Authors>Nonthaphan Inthawong</Authors>
     <Company>KMITL</Company>
     <Product>KmitlNetAuth</Product>

@@ -13,7 +13,6 @@ permissions:
 
 env:
   DOTNET_VERSION: "10.0.x"
-  DOTNET_QUALITY: "preview"
 
 jobs:
   build-linux:
@@ -24,7 +23,6 @@ jobs:
       - uses: actions/setup-dotnet@v4
         with:
           dotnet-version: ${{ env.DOTNET_VERSION }}
-          dotnet-quality: ${{ env.DOTNET_QUALITY }}
 
       - name: Set version
         run: |
@@ -100,7 +98,6 @@ jobs:
       - uses: actions/setup-dotnet@v4
         with:
           dotnet-version: ${{ env.DOTNET_VERSION }}
-          dotnet-quality: ${{ env.DOTNET_QUALITY }}
 
       - name: Set version
         shell: bash
