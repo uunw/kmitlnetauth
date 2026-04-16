@@ -1,0 +1,7 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/KmitlNetAuth.Cli/KmitlNetAuth.Cli.csproj" />
+    <Project Path="src/KmitlNetAuth.Core/KmitlNetAuth.Core.csproj" />
+    <Project Path="src/KmitlNetAuth.Tray/KmitlNetAuth.Tray.csproj" />
+  </Folder>
+</Solution>

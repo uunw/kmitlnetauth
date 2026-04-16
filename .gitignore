@@ -1,0 +1,41 @@
+## .NET
+bin/
+obj/
+publish/
+out/
+
+## IDE
+.vs/
+.vscode/
+.idea/
+*.user
+*.suo
+*.userprefs
+
+## Build
+*.nupkg
+*.snupkg
+BundleArtifacts/
+
+## Packages
+packages/
+
+## OS
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+
+## App artifacts
+logs/
+*.log
+config.yaml
+config.json
+.env
+
+## Installers
+*.deb
+*.rpm
+*.msi
+*.exe
+!src/**/*.exe
