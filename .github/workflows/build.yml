@@ -127,7 +127,7 @@ jobs:
           rpmbuild --define "_topdir $(pwd)/rpmbuild" \
             --define "_rpmdir $(pwd)/publish/rpm" \
             --define "_build_name_fmt %%{NAME}-%%{VERSION}-%%{RELEASE}.${RPM_ARCH}.rpm" \
-            --buildarch ${RPM_ARCH} \
+            --target ${RPM_ARCH}-linux \
             -bb rpmbuild/SPECS/kmitlnetauth.spec
 
       - uses: actions/upload-artifact@v4
