@@ -43,9 +43,26 @@ KmitlNetAuth.sln
 | **CLI** | `System.CommandLine` with subcommands (setup, status, config), `Serilog` logging, `Microsoft.Extensions.Hosting` for daemon/systemd/Windows Service |
 | **Tray** | WinForms `NotifyIcon` with context menu, hosts auth worker in background |
 
+## Quick Login (Headless Linux)
+
+Need internet on a headless server before you can install anything?
+
+```bash
+bash scripts/kmitl-login.sh
+```
+
+Or a raw curl one-liner:
+
+```bash
+curl -sk -X POST "https://portal.kmitl.ac.th:19008/portalauth/login" \
+  -d "userName=YOUR_ID&userPass=YOUR_PASS&uaddress=&umac=$(ip link show | awk '/ether/{print $2;exit}' | tr -d ':')&agreed=1&acip=10.252.13.10&authType=1"
+```
+
 ## Installation
 
-See [Installation Guide](docs/INSTALL-PACKAGES.md) for detailed instructions.
+See the **[Full Installation Guide](docs/INSTALL.md)** for all platforms (Linux, Windows, Docker) with step-by-step instructions including build-from-source.
+
+Quick links: [Debian/Ubuntu](docs/INSTALL.md#linux---install-from-github-releases) | [RHEL/CentOS](docs/INSTALL.md#linux---install-from-github-releases) | [Windows MSI](docs/INSTALL.md#windows---msi-installer) | [Docker](docs/INSTALL.md#docker) | [Build from source](docs/INSTALL.md#linux---build-from-source)
 
 ### Docker
 
@@ -118,9 +135,13 @@ Releases are created automatically on tag push (`v*`).
 
 Date-based: `YYYYMMDD.N` (e.g., `20260416.0`)
 
+## Contributing
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for development setup, conventions, and how to submit changes.
+
 ## License
 
-MIT
+[MIT](LICENSE)
 
 ## References
 
