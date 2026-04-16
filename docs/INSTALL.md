@@ -67,20 +67,24 @@ After you have internet, proceed with the full installation below.
 # Download the latest .deb package
 curl -LO https://github.com/uunw/kmitlnetauth/releases/latest/download/kmitlnetauth_amd64.deb
 
-# Install
+# Install (requires dotnet-runtime-10.0)
 sudo dpkg -i kmitlnetauth_*.deb
 
 # The service is automatically enabled and started after installation.
 ```
 
+> **Note:** The `.deb` package is framework-dependent (~1-2 MB) and requires `dotnet-runtime-10.0`. Install it from [Microsoft's package repository](https://learn.microsoft.com/en-us/dotnet/core/install/linux) if not already present.
+
 #### Red Hat / CentOS / Fedora (.rpm)
 
 ```bash
-# Download and install
+# Download and install (requires dotnet-runtime-10.0)
 sudo rpm -i https://github.com/uunw/kmitlnetauth/releases/latest/download/kmitlnetauth.x86_64.rpm
 ```
 
 #### Standalone Binary
+
+The standalone binary is self-contained (~14 MB) and does not require a .NET runtime.
 
 ```bash
 # Download the binary
@@ -112,7 +116,7 @@ kmitlnetauth setup
 
 This will prompt you for:
 - **Student ID** - Your KMITL student number
-- **Password** - Stored securely in an encrypted file (not in config.yaml)
+- **Password** - Stored securely in an encrypted file (not in config.toml)
 - **IP Address** - Optional, auto-detected if empty
 - **Heartbeat Interval** - Default 300 seconds
 - **Auto-login** - Enable/disable
@@ -121,21 +125,26 @@ Alternatively, edit the config file manually:
 
 ```bash
 # System-wide config
-sudo nano /etc/kmitlnetauth/config.yaml
+sudo nano /etc/kmitlnetauth/config.toml
 
 # Or user config
-nano ~/.config/kmitlnetauth/config.yaml
+nano ~/.config/kmitlnetauth/config.toml
 ```
 
-Example `config.yaml`:
+Example `config.toml`:
 
-```yaml
-username: "670xxxxx"
-ip_address: "10.x.x.x"
-interval: 300
-max_attempt: 20
-auto_login: true
-log_level: Information
+```toml
+[auth]
+username = "670xxxxx"
+ip_address = "10.x.x.x"
+
+[service]
+interval = 300
+max_attempt = 20
+auto_login = true
+
+[logging]
+level = "Information"
 ```
 
 Then restart the service:
@@ -171,6 +180,9 @@ cd kmitlnetauth
 
 # Build
 dotnet build
+
+# Run tests
+dotnet test
 
 # Run directly
 dotnet run --project src/KmitlNetAuth.Cli
@@ -232,25 +244,25 @@ Log files are also written to `~/.local/share/kmitlnetauth/logs/` with daily rot
 ### Windows - MSI Installer
 
 1. Download the latest `.msi` from [GitHub Releases](https://github.com/uunw/kmitlnetauth/releases/latest)
-2. Run the installer - it will install both the CLI and the system tray app to `C:\Program Files\KMITL NetAuth\`
-3. The tray app launches automatically after installation
-4. On first launch, a **Settings window** appears to configure your credentials
-5. Right-click the tray icon to:
-   - Toggle **Auto Login** / **Auto Start**
-   - Open **Settings** (Fluent UI settings window)
-   - **Show Console** (live log viewer)
-   - Change **Log Level**
-   - **Check for Updates** (auto-downloads and installs MSI)
-   - **Quit**
+2. Run the installer - it will install both the CLI and the GUI app to `C:\Program Files\KMITL NetAuth\`
+3. The GUI app launches automatically after installation
+4. The app includes a full GUI with sidebar navigation:
+   - **Dashboard** - Status indicator, username, IP, uptime, Login Now/Pause buttons
+   - **Log** - In-app live log viewer with level filter
+   - **Settings** - Full config editor grouped by TOML section, username validation, auto-start toggle
+   - **Debug** - Config viewer, credential status, network info, test buttons
+   - **About** - Version, update check with download progress, GitHub link
+5. Tray icon: double-click to show/hide, close minimizes to tray
+6. The app automatically checks for updates on startup and every 24 hours
 
-The tray app automatically checks for updates on startup and every 24 hours.
+> **Note:** The MSI is framework-dependent (~8 MB) and requires the [.NET 10 Runtime](https://dotnet.microsoft.com/download/dotnet/10.0). The installer will prompt to install it if missing.
 
 ### Windows - Manual / Portable
 
 Download the standalone executables from [GitHub Releases](https://github.com/uunw/kmitlnetauth/releases/latest):
 
 - `kmitlnetauth.exe` - CLI application
-- `kmitlnetauth-tray.exe` - System tray application
+- `kmitlnetauth-tray.exe` - GUI application
 
 ```powershell
 # Interactive setup
@@ -265,11 +277,11 @@ Download the standalone executables from [GitHub Releases](https://github.com/uu
 # Run as daemon (background)
 .\kmitlnetauth.exe -d
 
-# Or just run the tray app (includes the auth service)
+# Or just run the GUI app (includes the auth service)
 .\kmitlnetauth-tray.exe
 ```
 
-Config file location: `%APPDATA%\kmitlnetauth\config.yaml`
+Config file location: `%APPDATA%\kmitlnetauth\config.toml`
 
 ### Windows - Build from Source
 
@@ -285,6 +297,9 @@ cd kmitlnetauth
 
 # Build all projects
 dotnet build
+
+# Run tests
+dotnet test
 
 # Run CLI
 dotnet run --project src/KmitlNetAuth.Cli
@@ -419,21 +434,44 @@ docker run -d \
 
 | Platform | Path |
 |---|---|
-| Linux (global) | `/etc/kmitlnetauth/config.yaml` |
-| Linux (user) | `~/.config/kmitlnetauth/config.yaml` |
-| Windows | `%APPDATA%\kmitlnetauth\config.yaml` |
+| Linux (global) | `/etc/kmitlnetauth/config.toml` |
+| Linux (user) | `~/.config/kmitlnetauth/config.toml` |
+| Windows | `%APPDATA%\kmitlnetauth\config.toml` |
 
 Priority: CLI `--config` flag > global path (if exists) > user path.
 
+> **Note:** Legacy `config.yaml` files are automatically migrated to `config.toml` on first load.
+
 ### Config Fields
 
-```yaml
-username: "670xxxxx"        # Student ID (required)
-ip_address: "10.x.x.x"     # Static IP (optional, auto-detect if empty)
-interval: 300               # Heartbeat interval in seconds (default: 300)
-max_attempt: 20             # Max login retries before backoff (default: 20)
-auto_login: true            # Enable auto-login (default: true)
-log_level: Information      # Verbose / Debug / Information / Warning / Error
+```toml
+[auth]
+username = "670xxxxx"          # Student ID (required)
+ip_address = "10.x.x.x"       # Static IP (optional, auto-detect if empty)
+
+[network]
+# Auth endpoints (configurable, defaults shown)
+# login_url = "https://portal.kmitl.ac.th:19008/portalauth/login"
+# heartbeat_url = "https://nani.csc.kmitl.ac.th/network-api/data/"
+# internet_check_url = "http://detectportal.firefox.com/success.txt"
+
+[service]
+interval = 300                 # Heartbeat interval in seconds (default: 300)
+max_attempt = 20               # Max login retries before backoff (default: 20)
+auto_login = true              # Enable auto-login (default: true)
+
+[logging]
+level = "Information"          # Verbose / Debug / Information / Warning / Error
+
+[notifications]
+enabled = true                 # Enable desktop notifications (default: true)
+
+[update]
+auto_check = true              # Auto-check for updates (default: true)
+check_interval_hours = 24      # Update check interval (default: 24)
+
+[tray]
+# Windows tray app settings
 ```
 
 > **Note:** Passwords are **never** stored in the config file. They are kept in the OS credential store:
@@ -447,13 +485,13 @@ All config fields can be overridden via environment variables. Useful for Docker
 
 | Variable | Config Field | Example |
 |---|---|---|
-| `KMITL_USERNAME` | `username` | `670xxxxx` |
+| `KMITL_USERNAME` | `[auth] username` | `670xxxxx` |
 | `KMITL_PASSWORD` | `password` | *(your password)* |
-| `KMITL_IP` | `ip_address` | `10.0.0.50` |
-| `KMITL_INTERVAL` | `interval` | `300` |
-| `KMITL_MAX_ATTEMPT` | `max_attempt` | `20` |
-| `KMITL_AUTO_LOGIN` | `auto_login` | `true` |
-| `KMITL_LOG_LEVEL` | `log_level` | `Information` |
+| `KMITL_IP` | `[auth] ip_address` | `10.0.0.50` |
+| `KMITL_INTERVAL` | `[service] interval` | `300` |
+| `KMITL_MAX_ATTEMPT` | `[service] max_attempt` | `20` |
+| `KMITL_AUTO_LOGIN` | `[service] auto_login` | `true` |
+| `KMITL_LOG_LEVEL` | `[logging] level` | `Information` |
 
 ### Log File Locations
 

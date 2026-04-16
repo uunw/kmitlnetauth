@@ -6,12 +6,13 @@ A secure, cross-platform auto-authentication service for the KMITL network. Buil
 
 - **Auto-Reconnect** - Monitors connection and re-authenticates automatically
 - **Secure Credentials** - Passwords stored via Windows DPAPI or encrypted file (Linux), never in plain text
-- **Cross-Platform** - Windows 10+ (MSI + system tray), Linux (DEB/RPM + systemd), Docker
-- **System Tray** - Windows tray app with Fluent UI (WPF), settings wizard, auto-update with download
+- **Cross-Platform** - Windows 10+ (MSI + GUI), Linux (DEB/RPM + systemd), Docker
+- **Windows GUI** - Full WPF + wpfui app with Dashboard, Log viewer, Settings, Debug, and About pages
 - **CLI** - Interactive setup wizard, status display, daemon mode (`-d`)
 - **Auto-Update** - Checks GitHub releases, downloads and installs updates automatically (Windows)
 - **TOML Config** - Grouped, commented config file with environment variable overrides
 - **Log Rotation** - Daily rotating log files with configurable retention
+- **46 Tests** - xunit test coverage across Core (38) and CLI (8)
 
 ## Quick Start
 
@@ -33,16 +34,18 @@ kmitlnetauth status
 
 ```
 KmitlNetAuth.sln
-├── KmitlNetAuth.Core     # Shared library: auth, config, platform abstractions
-├── KmitlNetAuth.Cli      # CLI application with daemon mode
-└── KmitlNetAuth.Tray     # Windows 10+ system tray app (WPF + wpfui)
+├── KmitlNetAuth.Core        # Shared library: auth, config, platform abstractions
+├── KmitlNetAuth.Cli         # CLI application with daemon mode
+├── KmitlNetAuth.Tray        # Windows 10+ GUI app (WPF + wpfui)
+├── KmitlNetAuth.Core.Tests  # 38 xunit tests
+└── KmitlNetAuth.Cli.Tests   # 8 xunit tests
 ```
 
 | Component | Description |
 |---|---|
-| **Core** | Auth client, TOML config with env var overrides, credential storage (DPAPI/AES), notifications, auto-start |
-| **CLI** | `System.CommandLine` with subcommands, `Serilog` logging, systemd/Windows Service integration |
-| **Tray** | WPF with Fluent UI (wpfui), system tray, settings window, auto-update with MSI download, console log viewer |
+| **Core** | Auth client (configurable URLs), TOML config (Tomlyn) with env var overrides, credential storage (DPAPI/AES), DHCP detection, notifications, auto-start |
+| **CLI** | `System.CommandLine` v2.0.6 with subcommands (run, setup, status, config), `Serilog` logging, `Spectre.Console` setup wizard, systemd/Windows Service integration |
+| **Tray** | WPF + wpfui GUI with sidebar navigation: Dashboard, Log, Settings, Debug, About pages. Tray icon, auto-update with MSI download, DHCP detection |
 
 ## Quick Login (Headless Linux)
 
@@ -72,7 +75,7 @@ Quick links: [Debian/Ubuntu](docs/INSTALL.md#linux---install-from-github-release
 | Linux standalone binary | Self-contained, single-file | ~14 MB | No |
 | `.deb` / `.rpm` | Framework-dependent | ~1-2 MB | Yes (`dotnet-runtime-10.0`) |
 | Windows `.msi` | Framework-dependent | ~8 MB | Yes (.NET 10 Runtime, auto-prompted) |
-| Docker | Self-contained | ~14 MB | No |
+| Docker | Self-contained, multi-platform | ~14 MB | No |
 
 ### Docker
 
@@ -120,10 +123,11 @@ See [docs/INSTALL.md#configuration-reference](docs/INSTALL.md#configuration-refe
 
 - [.NET 10 SDK](https://dotnet.microsoft.com/download/dotnet/10.0)
 
-### Build
+### Build & Test
 
 ```bash
 dotnet build
+dotnet test    # 46 tests
 ```
 
 ### Run
@@ -140,8 +144,9 @@ dotnet run --project src/KmitlNetAuth.Tray
 
 GitHub Actions auto-builds and releases on every push to main:
 - **Linux:** Standalone binary (x64 + arm64) + `.deb` + `.rpm`
-- **Windows:** `.msi` installer (x64)
-- **Docker:** Multi-arch image pushed to `ghcr.io/uunw/kmitlnetauth`
+- **Windows:** `.msi` installer (x64) via WiX v7
+- **Docker:** Multi-arch image (amd64 + arm64) pushed to `ghcr.io/uunw/kmitlnetauth`
+- **Tests:** 46 tests run in CI (amd64)
 - **Release:** Auto-tagged with date-based version (`YYYYMMDD.N`)
 
 Dependabot keeps NuGet packages, GitHub Actions, and Docker base images up to date.

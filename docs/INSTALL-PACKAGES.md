@@ -10,14 +10,16 @@ Download and install the latest `.deb` package:
 # Download latest release
 curl -LO https://github.com/uunw/kmitlnetauth/releases/latest/download/kmitlnetauth_amd64.deb
 
-# Install
+# Install (requires dotnet-runtime-10.0)
 sudo dpkg -i kmitlnetauth_*.deb
 ```
 
 The package will:
-- Install the binary to `/usr/bin/kmitlnetauth`
+- Install to `/usr/lib/kmitlnetauth/` with a wrapper script at `/usr/bin/kmitlnetauth`
 - Install the systemd service to `/etc/systemd/system/kmitlnetauth.service`
 - Enable and start the service automatically
+
+> **Note:** The `.deb` package is framework-dependent (~1-2 MB) and requires `dotnet-runtime-10.0`. Install it from [Microsoft's package repository](https://learn.microsoft.com/en-us/dotnet/core/install/linux) if not already present.
 
 ### First-time setup
 
@@ -30,7 +32,7 @@ sudo kmitlnetauth setup
 Or edit the config file manually:
 
 ```bash
-sudo nano /etc/kmitlnetauth/config.yaml
+sudo nano /etc/kmitlnetauth/config.toml
 ```
 
 Then restart the service:
@@ -52,7 +54,7 @@ sudo apt remove kmitlnetauth
 ### Install from GitHub Releases
 
 ```bash
-# Download latest release
+# Download latest release (requires dotnet-runtime-10.0)
 sudo rpm -i https://github.com/uunw/kmitlnetauth/releases/latest/download/kmitlnetauth.x86_64.rpm
 ```
 
@@ -75,10 +77,19 @@ sudo rpm -e kmitlnetauth
 
 ### MSI Installer (Recommended)
 
+> **Requires Windows 10 version 1809 or later.**
+
 1. Download the latest `.msi` from [GitHub Releases](https://github.com/uunw/kmitlnetauth/releases/latest)
-2. Run the installer
-3. The tray app will launch automatically after installation
-4. Right-click the tray icon to configure settings
+2. Run the installer (installs to `C:\Program Files\KMITL NetAuth\`)
+3. The GUI app launches automatically after installation
+4. The app includes a full GUI with sidebar navigation:
+   - **Dashboard** - Status indicator, username, IP, uptime, Login Now/Pause buttons
+   - **Log** - In-app live log viewer with level filter
+   - **Settings** - Full config editor grouped by TOML section, auto-start toggle
+   - **Debug** - Config viewer, credential status, network info, test buttons
+   - **About** - Version, update check with download progress
+
+> **Note:** The MSI is framework-dependent (~8 MB) and requires the [.NET 10 Runtime](https://dotnet.microsoft.com/download/dotnet/10.0). The installer will prompt to install it if missing.
 
 ### Manual Installation
 
@@ -189,19 +200,26 @@ All configuration can be overridden via environment variables:
 ## Config File
 
 Default locations:
-- **Linux (global):** `/etc/kmitlnetauth/config.yaml`
-- **Linux (user):** `~/.config/kmitlnetauth/config.yaml`
-- **Windows:** `%APPDATA%\kmitlnetauth\config.yaml`
+- **Linux (global):** `/etc/kmitlnetauth/config.toml`
+- **Linux (user):** `~/.config/kmitlnetauth/config.toml`
+- **Windows:** `%APPDATA%\kmitlnetauth\config.toml`
 
-Example `config.yaml`:
+> **Note:** Legacy `config.yaml` files are automatically migrated to `config.toml` on first load.
 
-```yaml
-username: "670xxxxx"
-ip_address: "10.x.x.x"
-interval: 300
-max_attempt: 20
-auto_login: true
-log_level: Information
+Example `config.toml`:
+
+```toml
+[auth]
+username = "670xxxxx"
+ip_address = "10.x.x.x"
+
+[service]
+interval = 300
+max_attempt = 20
+auto_login = true
+
+[logging]
+level = "Information"
 ```
 
 > **Note:** Passwords are stored securely in the OS credential store (Windows DPAPI / Linux encrypted file). They are never written to the config file in plain text after first setup.
