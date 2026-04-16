@@ -15,7 +15,22 @@ env:
   DOTNET_VERSION: "10.0.x"
 
 jobs:
+  version:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+    steps:
+      - name: Set version
+        id: version
+        run: |
+          if [[ "$GITHUB_REF" == refs/tags/v* ]]; then
+            echo "version=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
+          else
+            echo "version=$(date +%Y%m%d).${{ github.run_number }}" >> $GITHUB_OUTPUT
+          fi
+
   build-linux:
+    needs: version
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -34,14 +49,6 @@ jobs:
           cache: true
           cache-dependency-path: 'src/*/packages.lock.json'
 
-      - name: Set version
-        run: |
-          if [[ "$GITHUB_REF" == refs/tags/v* ]]; then
-            echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_ENV
-          else
-            echo "VERSION=$(date +%Y%m%d).${{ github.run_number }}" >> $GITHUB_ENV
-          fi
-
       - name: Restore
         run: dotnet restore
 
@@ -52,12 +59,12 @@ jobs:
           -r ${{ matrix.rid }}
           --self-contained true
           -p:PublishSingleFile=true
-          -p:Version=${{ env.VERSION }}
+          -p:Version=${{ needs.version.outputs.version }}
           -o ./publish/${{ matrix.rid }}
 
       - name: Build .deb package
         run: |
-          PKG=kmitlnetauth_${{ env.VERSION }}_${{ matrix.arch }}
+          PKG=kmitlnetauth_${{ needs.version.outputs.version }}_${{ matrix.arch }}
           mkdir -p ./publish/deb/${PKG}/DEBIAN
           mkdir -p ./publish/deb/${PKG}/usr/bin
           mkdir -p ./publish/deb/${PKG}/etc/systemd/system
@@ -67,7 +74,7 @@ jobs:
 
           cat > ./publish/deb/${PKG}/DEBIAN/control <<EOF
           Package: kmitlnetauth
-          Version: ${{ env.VERSION }}
+          Version: ${{ needs.version.outputs.version }}
           Section: net
           Priority: optional
           Architecture: ${{ matrix.arch }}
@@ -95,7 +102,7 @@ jobs:
 
           cat > rpmbuild/SPECS/kmitlnetauth.spec <<EOF
           Name: kmitlnetauth
-          Version: ${{ env.VERSION }}
+          Version: ${{ needs.version.outputs.version }}
           Release: 1
           Summary: Auto-authentication service for KMITL network
           License: MIT
@@ -138,16 +145,8 @@ jobs:
             publish/deb/*.deb
             publish/rpm/*.rpm
 
-      - name: Upload to Release
-        if: startsWith(github.ref, 'refs/tags/')
-        uses: softprops/action-gh-release@v3
-        with:
-          files: |
-            publish/${{ matrix.rid }}/kmitlnetauth
-            publish/deb/*.deb
-            publish/rpm/*.rpm
-
   build-windows:
+    needs: version
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v6
@@ -157,15 +156,6 @@ jobs:
           dotnet-version: ${{ env.DOTNET_VERSION }}
           cache: true
           cache-dependency-path: 'src/*/packages.lock.json'
-
-      - name: Set version
-        shell: bash
-        run: |
-          if [[ "$GITHUB_REF" == refs/tags/v* ]]; then
-            echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_ENV
-          else
-            echo "VERSION=$(date +%Y%m%d).${{ github.run_number }}" >> $GITHUB_ENV
-          fi
 
       - name: Restore
         run: dotnet restore
@@ -177,7 +167,7 @@ jobs:
           -r win-x64
           --self-contained true
           -p:PublishSingleFile=true
-          -p:Version=${{ env.VERSION }}
+          -p:Version=${{ needs.version.outputs.version }}
           -o ./publish/win-x64-cli
 
       - name: Publish Tray (win-x64)
@@ -187,7 +177,7 @@ jobs:
           -r win-x64
           --self-contained true
           -p:PublishSingleFile=true
-          -p:Version=${{ env.VERSION }}
+          -p:Version=${{ needs.version.outputs.version }}
           -o ./publish/win-x64-tray
 
       - name: Install WiX Toolset v5
@@ -198,7 +188,7 @@ jobs:
           wix build packaging/wix/Package.wxs
           -bindpath CliPublish=./publish/win-x64-cli
           -bindpath TrayPublish=./publish/win-x64-tray
-          -o ./publish/kmitlnetauth-${{ env.VERSION }}.msi
+          -o ./publish/kmitlnetauth-${{ needs.version.outputs.version }}.msi
 
       - uses: actions/upload-artifact@v7
         with:
@@ -208,30 +198,14 @@ jobs:
             publish/win-x64-tray/kmitlnetauth-tray.exe
             publish/*.msi
 
-      - name: Upload to Release
-        if: startsWith(github.ref, 'refs/tags/')
-        uses: softprops/action-gh-release@v3
-        with:
-          files: |
-            publish/win-x64-cli/kmitlnetauth.exe
-            publish/win-x64-tray/kmitlnetauth-tray.exe
-            publish/*.msi
-
   build-docker:
+    needs: version
     runs-on: ubuntu-latest
     permissions:
       contents: read
       packages: write
     steps:
       - uses: actions/checkout@v6
-
-      - name: Set version
-        run: |
-          if [[ "$GITHUB_REF" == refs/tags/v* ]]; then
-            echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_ENV
-          else
-            echo "VERSION=$(date +%Y%m%d).${{ github.run_number }}" >> $GITHUB_ENV
-          fi
 
       - uses: docker/setup-qemu-action@v4
 
@@ -251,7 +225,7 @@ jobs:
           images: ghcr.io/${{ github.repository }}
           tags: |
             type=raw,value=latest,enable={{is_default_branch}}
-            type=raw,value=${{ env.VERSION }}
+            type=raw,value=${{ needs.version.outputs.version }}
 
       - uses: docker/build-push-action@v7
         with:
@@ -260,7 +234,52 @@ jobs:
           push: ${{ github.event_name != 'pull_request' }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
-          build-args: VERSION=${{ env.VERSION }}
+          build-args: VERSION=${{ needs.version.outputs.version }}
           provenance: false
           cache-from: type=gha
           cache-to: type=gha,mode=max
+
+  release:
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    needs: [version, build-linux, build-windows, build-docker]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Prepare release assets
+        run: |
+          mkdir -p release
+          # Linux amd64
+          cp artifacts/linux-amd64/publish/linux-x64/kmitlnetauth release/kmitlnetauth-linux-amd64
+          cp artifacts/linux-amd64/publish/deb/*.deb release/
+          cp artifacts/linux-amd64/publish/rpm/*.rpm release/
+          # Linux arm64
+          cp artifacts/linux-arm64/publish/linux-arm64/kmitlnetauth release/kmitlnetauth-linux-arm64
+          cp artifacts/linux-arm64/publish/deb/*.deb release/
+          cp artifacts/linux-arm64/publish/rpm/*.rpm release/
+          # Windows
+          cp artifacts/windows-x64/publish/win-x64-cli/kmitlnetauth.exe release/kmitlnetauth-win-x64.exe
+          cp artifacts/windows-x64/publish/win-x64-tray/kmitlnetauth-tray.exe release/kmitlnetauth-tray-win-x64.exe
+          cp artifacts/windows-x64/publish/*.msi release/
+          ls -lh release/
+
+      - name: Create tag and release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          VERSION: ${{ needs.version.outputs.version }}
+        run: |
+          TAG="v${VERSION}"
+
+          # Create tag
+          git tag "$TAG"
+          git push origin "$TAG"
+
+          # Create release
+          gh release create "$TAG" release/* \
+            --title "v${VERSION}" \
+            --generate-notes \
+            --latest

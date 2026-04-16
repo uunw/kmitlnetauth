@@ -365,7 +365,7 @@
           "Microsoft.Extensions.Http": "[10.0.6, )",
           "Microsoft.Extensions.Logging.Abstractions": "[10.0.6, )",
           "Microsoft.Extensions.Options": "[10.0.6, )",
-          "System.Security.Cryptography.ProtectedData": "[9.0.4, )",
+          "System.Security.Cryptography.ProtectedData": "[10.0.6, )",
           "YamlDotNet": "[16.3.0, )"
         }
       },
@@ -410,9 +410,9 @@
       },
       "System.Security.Cryptography.ProtectedData": {
         "type": "CentralTransitive",
-        "requested": "[9.0.4, )",
-        "resolved": "9.0.4",
-        "contentHash": "o94k2RKuAce3GeDMlUvIXlhVa1kWpJw95E6C9LwW0KlG0nj5+SgCiIxJ2Eroqb9sLtG1mEMbFttZIBZ13EJPvQ=="
+        "requested": "[10.0.6, )",
+        "resolved": "10.0.6",
+        "contentHash": "XsGj3pcZ4PIqz9Vhk7ymbL9iNQzOAnDzHmMBqK1rzjjfQBJ4AUZVJQWbDmTKUS8BIXX53QBDRrdiCpwdWfZM9A=="
       },
       "YamlDotNet": {
         "type": "CentralTransitive",
