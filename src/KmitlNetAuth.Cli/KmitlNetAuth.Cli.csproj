@@ -5,7 +5,9 @@
     <RootNamespace>KmitlNetAuth.Cli</RootNamespace>
     <AssemblyName>kmitlnetauth</AssemblyName>
     <PublishTrimmed>true</PublishTrimmed>
-    <TrimMode>full</TrimMode>
+    <TrimMode>partial</TrimMode>
+    <!-- Suppress trim warnings from third-party libs (Serilog, YamlDotNet) -->
+    <SuppressTrimAnalysisWarnings>true</SuppressTrimAnalysisWarnings>
   </PropertyGroup>
 
   <ItemGroup>
